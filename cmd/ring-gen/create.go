@@ -195,5 +195,5 @@ func (t affinityTable) Find(supplier *rsdmatch.Supplier, buyer *rsdmatch.Buyer) 
 type remoteAccessLimit float64
 
 func (l remoteAccessLimit) Calculate(supplierCap, buyerDemand int64) int64 {
-	return int64(float64(buyerDemand) * float64(l))
+	return int64(float64(supplierCap) * float64(l))
 }
