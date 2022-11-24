@@ -35,7 +35,7 @@ type ViewInfo struct {
 	Percent float64 `json:"percent"`
 }
 
-func doCreate(ctx context.Context, nodeFile, viewFile, allocFile string, bw int64, ras, ral float64) error {
+func doCreate(ctx context.Context, nodeFile, viewFile, allocFile string, bw int64, ras, ral float64, verbose bool) error {
 	bw *= 1000 // to Mbps
 
 	suppliers, hasBW, err := loadNodes(nodeFile)
@@ -51,7 +51,9 @@ func doCreate(ctx context.Context, nodeFile, viewFile, allocFile string, bw int6
 	fmt.Printf("nodes: %v, views: %v, bw: %v, has: %v\n", len(suppliers), len(buyers), bw, hasBW)
 	fmt.Println("")
 
-	matches, perfect := rsdmatch.GreedyMatcher(scoreSensitivity).Match(suppliers, buyers, affinityTable{ras, ral})
+	matches, perfect := rsdmatch.GreedyMatcher(scoreSensitivity, verbose).Match(suppliers, buyers, affinityTable{ras, ral})
+	fmt.Println("")
+
 	err = writeAllocs(allocFile, matches)
 	if err != nil {
 		return fmt.Errorf("write alloc file failed: %w", err)

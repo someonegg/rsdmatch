@@ -60,6 +60,12 @@ var createCmd = &cli.Command{
 			Value:    0.1,
 			Usage:    "specify the remote access limit (0.0-1.0)",
 		},
+		&cli.BoolFlag{
+			Name:     "vv",
+			Required: false,
+			Value:    false,
+			Usage:    "verbose mode",
+		},
 	},
 	Action: func(ctx *cli.Context) error {
 		var (
@@ -69,6 +75,7 @@ var createCmd = &cli.Command{
 			bw        = ctx.Int64("bw")
 			ras       = ctx.Float64("ras")
 			ral       = ctx.Float64("ral")
+			verbose   = ctx.Bool("vv")
 		)
 		if bw <= 0 {
 			return errors.New("invalid bw")
@@ -79,6 +86,6 @@ var createCmd = &cli.Command{
 		if !(ral >= 0.0 && ral <= 1.0) {
 			return errors.New("invalid ral")
 		}
-		return doCreate(ctx.Context, nodeFile, viewFile, allocFile, bw, ras, ral)
+		return doCreate(ctx.Context, nodeFile, viewFile, allocFile, bw, ras, ral, verbose)
 	},
 }

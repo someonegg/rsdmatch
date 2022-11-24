@@ -5,17 +5,19 @@
 package rsdmatch
 
 import (
+	"fmt"
 	"math"
 	"sort"
 	"unsafe"
 )
 
 type greedyMatcher struct {
-	sens float32
+	sens    float32
+	verbose bool
 }
 
-func GreedyMatcher(priceSensitivity float32) Matcher {
-	return greedyMatcher{priceSensitivity}
+func GreedyMatcher(priceSensitivity float32, verbose bool) Matcher {
+	return greedyMatcher{priceSensitivity, verbose}
 }
 
 type greedyAffinity struct {
@@ -70,6 +72,10 @@ func (m greedyMatcher) Match(suppliers []Supplier, buyers []Buyer, affinities Af
 
 		if buyer.Demand <= 0 || available <= 0 {
 			continue
+		}
+
+		if m.verbose {
+			fmt.Println(start, end, al[start].price, buyer.ID, buyer.Demand, available)
 		}
 
 		percent := float64(buyer.Demand) / float64(available)
