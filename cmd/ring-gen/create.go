@@ -17,7 +17,7 @@ import (
 )
 
 const (
-	scoreSensitivity  = 20.0
+	scoreSensitivity  = 10.0
 	bwPromptThreshold = 100
 )
 
