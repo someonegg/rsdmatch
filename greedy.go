@@ -75,7 +75,7 @@ func (m greedyMatcher) Match(suppliers []Supplier, buyers []Buyer, affinities Af
 		}
 
 		if m.verbose {
-			fmt.Println(start, end, al[start].price, buyer.ID, buyer.Demand, available)
+			fmt.Println(start, end, al[start].price, buyer.ID, "need:", buyer.Demand, "has:", available)
 		}
 
 		percent := float64(buyer.Demand) / float64(available)
