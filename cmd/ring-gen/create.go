@@ -35,7 +35,8 @@ type ViewInfo struct {
 	Percent float64 `json:"percent"`
 }
 
-func doCreate(ctx context.Context, nodeFile, viewFile, allocFile string, bw int64, ras, ral float64, verbose bool) error {
+func doCreate(ctx context.Context, nodeFile, viewFile, allocFile string,
+	bw int64, ras, ral, rjs float64, verbose bool) error {
 	bw *= 1000 // to Mbps
 
 	suppliers, hasBW, err := loadNodes(nodeFile)
@@ -51,7 +52,12 @@ func doCreate(ctx context.Context, nodeFile, viewFile, allocFile string, bw int6
 	fmt.Printf("nodes: %v, views: %v, bw: %v, has: %v\n", len(suppliers), len(buyers), bw, hasBW)
 	fmt.Println("")
 
-	matches, perfect := rsdmatch.GreedyMatcher(scoreSensitivity, verbose).Match(suppliers, buyers, affinityTable{ras, ral})
+	matches, perfect := rsdmatch.GreedyMatcher(scoreSensitivity, verbose).Match(suppliers, buyers,
+		affinityTable{
+			ras: ras,
+			ral: ral,
+			rjs: rjs,
+		})
 	fmt.Println("")
 
 	err = writeAllocs(allocFile, matches)
@@ -172,23 +178,30 @@ func writeAllocs(file string, matches rsdmatch.Matches) error {
 type affinityTable struct {
 	ras float64
 	ral float64
+	rjs float64
 }
 
 func (t affinityTable) Find(supplier *rsdmatch.Supplier, buyer *rsdmatch.Buyer) rsdmatch.Affinity {
 	locA := supplier.Info.(*china.Location)
 	locB := buyer.Info.(*china.Location)
 	score, _ := china.ScoreOfDistance(*locA, *locB)
-	if score <= float32(t.ras) {
+	if float64(score) <= t.ras {
 		return rsdmatch.Affinity{
 			Price: score,
 			Limit: nil,
 		}
 	}
-
-	// remote
+	if float64(score) <= t.rjs {
+		// remote
+		return rsdmatch.Affinity{
+			Price: score,
+			Limit: remoteAccessLimit(t.ral),
+		}
+	}
+	// reject
 	return rsdmatch.Affinity{
 		Price: score,
-		Limit: remoteAccessLimit(t.ral),
+		Limit: remoteAccessLimit(0.0),
 	}
 }
 

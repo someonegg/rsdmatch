@@ -60,6 +60,12 @@ var createCmd = &cli.Command{
 			Value:    0.1,
 			Usage:    "specify the remote access limit (0.0-1.0)",
 		},
+		&cli.Float64Flag{
+			Name:     "rjs",
+			Required: false,
+			Value:    85.0,
+			Usage:    "specify the reject score (80.0-100.0)",
+		},
 		&cli.BoolFlag{
 			Name:     "vv",
 			Required: false,
@@ -75,6 +81,7 @@ var createCmd = &cli.Command{
 			bw        = ctx.Int64("bw")
 			ras       = ctx.Float64("ras")
 			ral       = ctx.Float64("ral")
+			rjs       = ctx.Float64("rjs")
 			verbose   = ctx.Bool("vv")
 		)
 		if bw <= 0 {
@@ -86,6 +93,9 @@ var createCmd = &cli.Command{
 		if !(ral >= 0.0 && ral <= 1.0) {
 			return errors.New("invalid ral")
 		}
-		return doCreate(ctx.Context, nodeFile, viewFile, allocFile, bw, ras, ral, verbose)
+		if !(rjs >= 80.0 && rjs <= 100.0) {
+			return errors.New("invalid rjs")
+		}
+		return doCreate(ctx.Context, nodeFile, viewFile, allocFile, bw, ras, ral, rjs, verbose)
 	},
 }
