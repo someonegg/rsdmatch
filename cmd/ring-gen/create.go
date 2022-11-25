@@ -39,6 +39,19 @@ type ViewInfo struct {
 	Percent float64 `json:"percent"`
 }
 
+type Allocs struct {
+	Views []AllocView `json:"views"`
+}
+
+type AllocView struct {
+	Name   string       `json:"name"`
+	Groups []AllocGroup `json:"groups"`
+}
+
+type AllocGroup struct {
+	Nodes []string `json:"nodes"`
+}
+
 func doCreate(ctx context.Context, nodeFile, viewFile, allocFile string,
 	bw int64, ras, ral, rjs float64, verbose bool) error {
 	bw *= 1000 // to Mbps
@@ -178,11 +191,27 @@ func loadViews(file string, bw int64) ([]rsdmatch.Buyer, error) {
 }
 
 func writeAllocs(file string, matches rsdmatch.Matches) error {
+	var allocs Allocs
+
+	for buyerID, records := range matches {
+		group := AllocGroup{
+			Nodes: make([]string, len(records)),
+		}
+		for i, record := range records {
+			group.Nodes[i] = record.SupplierID
+		}
+		ss := strings.Split(buyerID, "-")
+		allocs.Views = append(allocs.Views, AllocView{
+			Name:   ss[1] + "-" + ss[3],
+			Groups: []AllocGroup{group},
+		})
+	}
+
 	var buf bytes.Buffer
 
 	encoder := json.NewEncoder(&buf)
 	encoder.SetIndent("", "   ")
-	if err := encoder.Encode(matches); err != nil {
+	if err := encoder.Encode(allocs); err != nil {
 		return err
 	}
 
