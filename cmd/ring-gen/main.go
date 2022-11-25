@@ -4,6 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strconv"
+	"strings"
 
 	"github.com/urfave/cli/v2"
 )
@@ -66,6 +68,11 @@ var createCmd = &cli.Command{
 			Value:    85.0,
 			Usage:    "specify the reject score (80.0-100.0)",
 		},
+		&cli.StringSliceFlag{
+			Name:     "modl",
+			Required: false,
+			Usage:    "specify a mode limit (mix=0.5)",
+		},
 		&cli.BoolFlag{
 			Name:     "vv",
 			Required: false,
@@ -95,6 +102,20 @@ var createCmd = &cli.Command{
 		}
 		if !(rjs >= 80.0 && rjs <= 100.0) {
 			return errors.New("invalid rjs")
+		}
+		for _, s := range ctx.StringSlice("modl") {
+			pair := strings.Split(s, "=")
+			if len(pair) != 2 {
+				return errors.New("invalid modl")
+			}
+			modl, err := strconv.ParseFloat(pair[1], 64)
+			if err != nil {
+				return errors.New("invalid modl")
+			}
+			if !(modl >= 0.0 && modl <= 1.0) {
+				return errors.New("invalid modl")
+			}
+			limitOfMode[pair[0]] = modl
 		}
 		return doCreate(ctx.Context, nodeFile, viewFile, allocFile, bw, ras, ral, rjs, verbose)
 	},

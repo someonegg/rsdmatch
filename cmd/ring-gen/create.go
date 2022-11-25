@@ -22,12 +22,15 @@ const (
 	bwPromptThreshold = 100
 )
 
+var limitOfMode = make(map[string]float64)
+
 type NodeInfo struct {
 	Node      string  `json:"node"`
 	Vendor    string  `json:"vendor"`
 	IP        string  `json:"ip"`
 	ISP       string  `json:"isp"`
 	Province  string  `json:"province"`
+	Mode      string  `json:"mode"`
 	Bandwidth float64 `json:"bw"`
 }
 
@@ -135,6 +138,9 @@ func loadNodes(file string) ([]rsdmatch.Supplier, int64, error) {
 		if suppliers[i].Cap == 0 || nodes[i].ISP == "" || nodes[i].Province == "" {
 			suppliers[i].Cap = 0
 			fmt.Println(nodes[i].Node, "info is incomplete")
+		}
+		if modl, ok := limitOfMode[nodes[i].Mode]; ok {
+			suppliers[i].Cap = int64(float64(suppliers[i].Cap) * modl)
 		}
 		bw += suppliers[i].Cap
 	}
