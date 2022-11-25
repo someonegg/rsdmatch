@@ -7,19 +7,22 @@
 package rsdmatch
 
 type Matcher interface {
+	// Match will set suppliers.CapRest and buyers.DemandRest.
 	Match(suppliers []Supplier, buyers []Buyer, affinities AffinityTable) (matches Matches, perfect bool)
 }
 
 type Supplier struct {
-	ID   string
-	Cap  int64
-	Info interface{}
+	ID      string
+	Cap     int64
+	CapRest int64
+	Info    interface{}
 }
 
 type Buyer struct {
-	ID     string
-	Demand int64
-	Info   interface{}
+	ID         string
+	Demand     int64
+	DemandRest int64
+	Info       interface{}
 }
 
 type AffinityTable interface {

@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"sort"
 	"strings"
 
 	"github.com/someonegg/rsdmatch"
@@ -68,12 +69,15 @@ func doCreate(ctx context.Context, nodeFile, viewFile, allocFile string,
 	if perfect {
 		fmt.Println("perfect match")
 	} else {
+		sort.Slice(buyers, func(i, j int) bool {
+			return buyers[i].DemandRest > buyers[j].DemandRest
+		})
 		needs := int64(0)
 		for _, buyer := range buyers {
-			if demand := buyer.Demand; demand > 0 {
-				needs += demand
-				if demand > bwPromptThreshold {
-					fmt.Println(buyer.ID, "needs", demand)
+			if demandRest := buyer.DemandRest; demandRest > 0 {
+				needs += demandRest
+				if demandRest > bwPromptThreshold {
+					fmt.Println(buyer.ID, "demand:", buyer.Demand, "demand_rest:", demandRest)
 				}
 			}
 		}
@@ -83,12 +87,16 @@ func doCreate(ctx context.Context, nodeFile, viewFile, allocFile string,
 	}
 	fmt.Println("")
 	{
+		sort.Slice(suppliers, func(i, j int) bool {
+			return suppliers[i].CapRest > suppliers[j].CapRest
+		})
 		remains := int64(0)
 		for _, supplier := range suppliers {
-			if cap := supplier.Cap; cap > 0 {
-				remains += cap
-				if cap > bwPromptThreshold {
-					fmt.Println(supplier.ID, "remains", cap)
+			if capRest := supplier.CapRest; capRest > 0 {
+				remains += capRest
+				if capRest > bwPromptThreshold {
+					loc := supplier.Info.(*china.Location)
+					fmt.Println(loc.ISP, loc.Province, supplier.ID, "cap:", supplier.Cap, "cap_rest:", capRest)
 				}
 			}
 		}

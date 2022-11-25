@@ -31,6 +31,13 @@ type greedyAffinity struct {
 func (m greedyMatcher) Match(suppliers []Supplier, buyers []Buyer, affinities AffinityTable) (matches Matches, perfect bool) {
 	al := make([]greedyAffinity, len(suppliers)*len(buyers))
 
+	for i := 0; i < len(suppliers); i++ {
+		suppliers[i].CapRest = suppliers[i].Cap
+	}
+	for i := 0; i < len(buyers); i++ {
+		buyers[i].DemandRest = buyers[i].Demand
+	}
+
 	for n, i := 0, 0; i < len(suppliers); i++ {
 		for j := 0; j < len(buyers); j++ {
 			a := affinities.Find(&suppliers[i], &buyers[j])
@@ -67,18 +74,19 @@ func (m greedyMatcher) Match(suppliers []Supplier, buyers []Buyer, affinities Af
 
 		available := int64(0)
 		for i := start; i < end; i++ {
-			available += minInt64(al[i].limit, al[i].supplier.Cap)
+			available += minInt64(al[i].limit, al[i].supplier.CapRest)
 		}
 
-		if buyer.Demand <= 0 || available <= 0 {
+		if buyer.DemandRest <= 0 || available <= 0 {
 			continue
 		}
 
 		if m.verbose {
-			fmt.Println(start, end, al[start].price, buyer.ID, "need:", buyer.Demand, "has:", available)
+			fmt.Println(start, end, al[start].price, buyer.ID,
+				"demand:", buyer.Demand, "demand_rest:", buyer.DemandRest, "available:", available)
 		}
 
-		percent := float64(buyer.Demand) / float64(available)
+		percent := float64(buyer.DemandRest) / float64(available)
 		if percent > 1.0 {
 			percent = 1.0
 		}
@@ -86,19 +94,19 @@ func (m greedyMatcher) Match(suppliers []Supplier, buyers []Buyer, affinities Af
 		allocated := int64(0)
 		for i := start; i < end; i++ {
 			supplier := al[i].supplier
-			amount := int64(math.Ceil(float64(minInt64(al[i].limit, supplier.Cap)) * percent))
+			amount := int64(math.Ceil(float64(minInt64(al[i].limit, supplier.CapRest)) * percent))
 			if amount <= 0 {
 				continue
 			}
-			supplier.Cap -= amount
+			supplier.CapRest -= amount
 			allocated += amount
 			matches[buyer.ID] = append(matches[buyer.ID], BuyRecord{supplier.ID, amount})
 		}
-		buyer.Demand -= allocated
+		buyer.DemandRest -= allocated
 
 		done := true
 		for i := 0; i < len(buyers); i++ {
-			if buyers[i].Demand > 0 {
+			if buyers[i].DemandRest > 0 {
 				done = false
 				break
 			}
