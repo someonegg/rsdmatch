@@ -201,7 +201,7 @@ func writeAllocs(file string, matches rsdmatch.Matches) error {
 		}
 		for i, record := range records {
 			group.Nodes[i] = record.SupplierID
-			group.NodesWeight[i] = record.Amount * bwUnit
+			group.NodesWeight[i] = record.Amount * bwUnit / 8
 		}
 		ss := strings.Split(buyerID, "-")
 		views = append(views, AllocView{
