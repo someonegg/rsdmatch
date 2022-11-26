@@ -53,7 +53,7 @@ var createCmd = &cli.Command{
 		&cli.Float64Flag{
 			Name:     "ras",
 			Required: false,
-			Value:    55.0,
+			Value:    50.0,
 			Usage:    "specify the remote access score (40.0-80.0)",
 		},
 		&cli.Float64Flag{
@@ -65,7 +65,7 @@ var createCmd = &cli.Command{
 		&cli.Float64Flag{
 			Name:     "rjs",
 			Required: false,
-			Value:    85.0,
+			Value:    80.0,
 			Usage:    "specify the reject score (80.0-100.0)",
 		},
 		&cli.StringSliceFlag{

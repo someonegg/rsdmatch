@@ -54,7 +54,7 @@ func (m greedyMatcher) Match(suppliers []Supplier, buyers []Buyer, affinities Af
 		}
 	}
 
-	sort.Slice(al, func(i, j int) bool {
+	sort.SliceStable(al, func(i, j int) bool {
 		return al[i].price < al[j].price || al[i].price == al[j].price &&
 			uintptr(unsafe.Pointer(al[i].buyer)) < uintptr(unsafe.Pointer(al[j].buyer))
 	})

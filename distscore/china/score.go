@@ -60,11 +60,12 @@ func init() {
 // ScoreOfDistance rules:
 //
 //	ISP_Province: 10
-//	ISP_Region: 30
+//	ISP_Region: 20
 //	ISP_AdjacentRegion: 40
-//	Province: 50
-//	Region: 60
+//	Province: 50, !(xinJiang || xiZang)
+//	Region: 60, !(xinJiang || xiZang)
 //	ISP: 70
+//	AdjacentRegion: 80
 //	Other: 90
 func ScoreOfDistance(a, b Location) (score float32, sameRegion bool) {
 	rA, rB := regionMap[a.Province], regionMap[b.Province]
@@ -75,8 +76,9 @@ func ScoreOfDistance(a, b Location) (score float32, sameRegion bool) {
 			score = 10.0
 			return
 		}
+
 		if sameRegion {
-			score = 30.0
+			score = 20.0
 			return
 		}
 
@@ -91,13 +93,27 @@ func ScoreOfDistance(a, b Location) (score float32, sameRegion bool) {
 		return
 	}
 
-	if a.Province == b.Province {
-		score = 50.0
-		return
+	isNormal := func(r int) bool {
+		return !(r == unknown || r == xinJiang || r == xiZang)
 	}
-	if sameRegion {
-		score = 60.0
-		return
+
+	if isNormal(rA) && isNormal(rB) {
+		if a.Province == b.Province {
+			score = 50.0
+			return
+		}
+
+		if sameRegion {
+			score = 60.0
+			return
+		}
+	}
+
+	for _, r := range regionNeighbors[rA] {
+		if rB == r {
+			score = 80.0
+			return
+		}
 	}
 
 	score = 90.0
