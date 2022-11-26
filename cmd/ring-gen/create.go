@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"math"
 	"sort"
 	"strings"
 
@@ -49,24 +50,25 @@ type AllocView struct {
 }
 
 type AllocGroup struct {
-	Nodes []string `json:"nodes"`
+	Nodes       []string `json:"nodes"`
+	NodesWeight []int64  `json:"nodesWeight"`
 }
 
 func doCreate(ctx context.Context, nodeFile, viewFile, allocFile string,
 	bw int64, ras, ral, rjs float64, verbose bool) error {
 	bw *= (1000 / bwUnit)
 
-	suppliers, hasBW, err := loadNodes(nodeFile)
+	suppliers, bwHas, err := loadNodes(nodeFile)
 	if err != nil {
 		return fmt.Errorf("load node file failed: %w", err)
 	}
 
-	buyers, err := loadViews(viewFile, bw)
+	buyers, bwNeeds, err := loadViews(viewFile, bw)
 	if err != nil {
 		return fmt.Errorf("load view file failed: %w", err)
 	}
 
-	fmt.Printf("nodes: %v, views: %v, bw: %v, has: %v\n", len(suppliers), len(buyers), bw*bwUnit, hasBW*bwUnit)
+	fmt.Printf("nodes: %v, views: %v, needs: %v, has: %v\n", len(suppliers), len(buyers), bwNeeds*bwUnit, bwHas*bwUnit)
 	fmt.Println("")
 
 	matches, perfect := rsdmatch.GreedyMatcher(scoreSensitivity, verbose).Match(suppliers, buyers,
@@ -133,13 +135,13 @@ func loadNodes(file string) ([]rsdmatch.Supplier, int64, error) {
 		return nil, 0, err
 	}
 
-	var bw int64
+	var bwHas int64
 
 	suppliers := make([]rsdmatch.Supplier, len(nodes))
 
 	for i := 0; i < len(nodes); i++ {
 		suppliers[i].ID = nodes[i].Node
-		suppliers[i].Cap = int64(nodes[i].Bandwidth * float64(1000/bwUnit))
+		suppliers[i].Cap = int64(math.Ceil(nodes[i].Bandwidth * float64(1000/bwUnit)))
 		suppliers[i].Info = &china.Location{
 			ISP:      nodes[i].ISP,
 			Province: nodes[i].Province,
@@ -149,41 +151,44 @@ func loadNodes(file string) ([]rsdmatch.Supplier, int64, error) {
 			fmt.Println(nodes[i].Node, "info is incomplete")
 		}
 		if modl, ok := limitOfMode[nodes[i].Mode]; ok {
-			suppliers[i].Cap = int64(float64(suppliers[i].Cap) * modl)
+			suppliers[i].Cap = int64(math.Ceil(float64(suppliers[i].Cap) * modl))
 		}
-		bw += suppliers[i].Cap
+		bwHas += suppliers[i].Cap
 	}
 
-	return suppliers, bw, nil
+	return suppliers, bwHas, nil
 }
 
-func loadViews(file string, bw int64) ([]rsdmatch.Buyer, error) {
+func loadViews(file string, bw int64) ([]rsdmatch.Buyer, int64, error) {
 	data, err := ioutil.ReadFile(file)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
 	var views []ViewInfo
 
 	decoder := json.NewDecoder(bytes.NewReader(data))
 	if err := decoder.Decode(&views); err != nil {
-		return nil, err
+		return nil, 0, err
 	}
+
+	var bwNeeds int64
 
 	buyers := make([]rsdmatch.Buyer, len(views))
 
 	for i := 0; i < len(views); i++ {
 		buyers[i].ID = views[i].View
-		buyers[i].Demand = int64(views[i].Percent * float64(bw))
+		buyers[i].Demand = int64(math.Ceil(views[i].Percent * float64(bw)))
 		// 默认-广东-华南-移动-中国-亚洲
 		ss := strings.Split(views[i].View, "-")
 		buyers[i].Info = &china.Location{
 			ISP:      ss[3],
 			Province: ss[1],
 		}
+		bwNeeds += buyers[i].Demand
 	}
 
-	return buyers, nil
+	return buyers, bwNeeds, nil
 }
 
 func writeAllocs(file string, matches rsdmatch.Matches) error {
@@ -191,10 +196,12 @@ func writeAllocs(file string, matches rsdmatch.Matches) error {
 
 	for buyerID, records := range matches {
 		group := AllocGroup{
-			Nodes: make([]string, len(records)),
+			Nodes:       make([]string, len(records)),
+			NodesWeight: make([]int64, len(records)),
 		}
 		for i, record := range records {
 			group.Nodes[i] = record.SupplierID
+			group.NodesWeight[i] = record.Amount * bwUnit
 		}
 		ss := strings.Split(buyerID, "-")
 		allocs.Views = append(allocs.Views, AllocView{
@@ -247,5 +254,5 @@ func (t affinityTable) Find(supplier *rsdmatch.Supplier, buyer *rsdmatch.Buyer) 
 type remoteAccessLimit float64
 
 func (l remoteAccessLimit) Calculate(supplierCap, buyerDemand int64) int64 {
-	return int64(float64(supplierCap) * float64(l))
+	return int64(math.Ceil(float64(supplierCap) * float64(l)))
 }
