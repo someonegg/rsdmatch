@@ -192,7 +192,7 @@ func loadViews(file string, bw int64) ([]rsdmatch.Buyer, int64, error) {
 }
 
 func writeAllocs(file string, matches rsdmatch.Matches) error {
-	var allocs Allocs
+	var views []AllocView
 
 	for buyerID, records := range matches {
 		group := AllocGroup{
@@ -204,17 +204,21 @@ func writeAllocs(file string, matches rsdmatch.Matches) error {
 			group.NodesWeight[i] = record.Amount * bwUnit
 		}
 		ss := strings.Split(buyerID, "-")
-		allocs.Views = append(allocs.Views, AllocView{
+		views = append(views, AllocView{
 			Name:   ss[1] + "-" + ss[3],
 			Groups: []AllocGroup{group},
 		})
 	}
 
+	sort.Slice(views, func(i, j int) bool {
+		return views[i].Name < views[j].Name
+	})
+
 	var buf bytes.Buffer
 
 	encoder := json.NewEncoder(&buf)
 	encoder.SetIndent("", "   ")
-	if err := encoder.Encode(allocs); err != nil {
+	if err := encoder.Encode(Allocs{views}); err != nil {
 		return err
 	}
 

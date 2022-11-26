@@ -104,6 +104,9 @@ func (m greedyMatcher) Match(suppliers []Supplier, buyers []Buyer, affinities Af
 			supplier.CapRest -= amount
 			allocated += amount
 			matches[buyer.ID] = append(matches[buyer.ID], BuyRecord{supplier.ID, amount})
+			if allocated >= buyer.DemandRest {
+				break
+			}
 		}
 		buyer.DemandRest -= allocated
 
