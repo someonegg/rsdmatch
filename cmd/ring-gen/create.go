@@ -18,8 +18,8 @@ import (
 )
 
 const (
-	scoreSensitivity  = 10.0
-	bwPromptThreshold = 100
+	scoreSensitivity = 10.0
+	bwUnit           = 100 // Mbps
 )
 
 var limitOfMode = make(map[string]float64)
@@ -54,7 +54,7 @@ type AllocGroup struct {
 
 func doCreate(ctx context.Context, nodeFile, viewFile, allocFile string,
 	bw int64, ras, ral, rjs float64, verbose bool) error {
-	bw *= 1000 // to Mbps
+	bw *= (1000 / bwUnit)
 
 	suppliers, hasBW, err := loadNodes(nodeFile)
 	if err != nil {
@@ -66,7 +66,7 @@ func doCreate(ctx context.Context, nodeFile, viewFile, allocFile string,
 		return fmt.Errorf("load view file failed: %w", err)
 	}
 
-	fmt.Printf("nodes: %v, views: %v, bw: %v, has: %v\n", len(suppliers), len(buyers), bw, hasBW)
+	fmt.Printf("nodes: %v, views: %v, bw: %v, has: %v\n", len(suppliers), len(buyers), bw*bwUnit, hasBW*bwUnit)
 	fmt.Println("")
 
 	matches, perfect := rsdmatch.GreedyMatcher(scoreSensitivity, verbose).Match(suppliers, buyers,
@@ -92,13 +92,11 @@ func doCreate(ctx context.Context, nodeFile, viewFile, allocFile string,
 		for _, buyer := range buyers {
 			if demandRest := buyer.DemandRest; demandRest > 0 {
 				needs += demandRest
-				if demandRest > bwPromptThreshold {
-					fmt.Println(buyer.ID, "demand:", buyer.Demand, "demand_rest:", demandRest)
-				}
+				fmt.Println(buyer.ID, "demand:", buyer.Demand*bwUnit, "demand_rest:", demandRest*bwUnit)
 			}
 		}
 		if needs > 0 {
-			fmt.Println("total needs", needs)
+			fmt.Println("total needs", needs*bwUnit)
 		}
 	}
 	fmt.Println("")
@@ -110,14 +108,12 @@ func doCreate(ctx context.Context, nodeFile, viewFile, allocFile string,
 		for _, supplier := range suppliers {
 			if capRest := supplier.CapRest; capRest > 0 {
 				remains += capRest
-				if capRest > bwPromptThreshold {
-					loc := supplier.Info.(*china.Location)
-					fmt.Println(loc.ISP, loc.Province, supplier.ID, "cap:", supplier.Cap, "cap_rest:", capRest)
-				}
+				loc := supplier.Info.(*china.Location)
+				fmt.Println(loc.ISP, loc.Province, supplier.ID, "cap:", supplier.Cap*bwUnit, "cap_rest:", capRest*bwUnit)
 			}
 		}
 		if remains > 0 {
-			fmt.Println("total remains", remains)
+			fmt.Println("total remains", remains*bwUnit)
 		}
 	}
 
@@ -143,7 +139,7 @@ func loadNodes(file string) ([]rsdmatch.Supplier, int64, error) {
 
 	for i := 0; i < len(nodes); i++ {
 		suppliers[i].ID = nodes[i].Node
-		suppliers[i].Cap = int64(nodes[i].Bandwidth * 1000.0) // to Mbps
+		suppliers[i].Cap = int64(nodes[i].Bandwidth * float64(1000/bwUnit))
 		suppliers[i].Info = &china.Location{
 			ISP:      nodes[i].ISP,
 			Province: nodes[i].Province,

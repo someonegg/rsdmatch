@@ -98,6 +98,9 @@ func (m greedyMatcher) Match(suppliers []Supplier, buyers []Buyer, affinities Af
 			if amount <= 0 {
 				continue
 			}
+			if m.verbose {
+				fmt.Println("-", al[i].supplier.ID, al[i].supplier.Info, amount)
+			}
 			supplier.CapRest -= amount
 			allocated += amount
 			matches[buyer.ID] = append(matches[buyer.ID], BuyRecord{supplier.ID, amount})
