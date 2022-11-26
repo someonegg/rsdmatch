@@ -53,7 +53,7 @@ var createCmd = &cli.Command{
 		&cli.Float64Flag{
 			Name:     "ras",
 			Required: false,
-			Value:    50.0,
+			Value:    55.0,
 			Usage:    "specify the remote access score (40.0-80.0)",
 		},
 		&cli.Float64Flag{

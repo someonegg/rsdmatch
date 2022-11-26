@@ -228,13 +228,13 @@ func (t affinityTable) Find(supplier *rsdmatch.Supplier, buyer *rsdmatch.Buyer) 
 	locA := supplier.Info.(*china.Location)
 	locB := buyer.Info.(*china.Location)
 	score, _ := china.ScoreOfDistance(*locA, *locB)
-	if float64(score) <= t.ras {
+	if float64(score) < t.ras {
 		return rsdmatch.Affinity{
 			Price: score,
 			Limit: nil,
 		}
 	}
-	if float64(score) <= t.rjs {
+	if float64(score) < t.rjs {
 		// remote
 		return rsdmatch.Affinity{
 			Price: score,
