@@ -13,11 +13,12 @@ import (
 
 type greedyMatcher struct {
 	sens    float32
+	enough  int
 	verbose bool
 }
 
-func GreedyMatcher(priceSensitivity float32, verbose bool) Matcher {
-	return greedyMatcher{priceSensitivity, verbose}
+func GreedyMatcher(priceSensitivity float32, enoughSupplierCount int, verbose bool) Matcher {
+	return greedyMatcher{priceSensitivity, enoughSupplierCount, verbose}
 }
 
 type greedyAffinity struct {
@@ -77,16 +78,21 @@ func (m greedyMatcher) Match(suppliers []Supplier, buyers []Buyer, affinities Af
 			available += minInt64(al[i].limit, al[i].supplier.CapRest)
 		}
 
-		if buyer.DemandRest <= 0 || available <= 0 {
+		demandRest := buyer.DemandRest
+		if buyer.Demand > 0 && demandRest <= 0 && len(matches[buyer.ID]) < m.enough {
+			demandRest = 1
+		}
+
+		if demandRest <= 0 || available <= 0 {
 			continue
 		}
 
 		if m.verbose {
 			fmt.Println(start, end, al[start].price, buyer.ID,
-				"demand:", buyer.Demand, "demand_rest:", buyer.DemandRest, "available:", available)
+				"demand:", buyer.Demand, "demand_rest:", demandRest, "available:", available)
 		}
 
-		percent := float64(buyer.DemandRest) / float64(available)
+		percent := float64(demandRest) / float64(available)
 		if percent > 1.0 {
 			percent = 1.0
 		}
@@ -104,7 +110,7 @@ func (m greedyMatcher) Match(suppliers []Supplier, buyers []Buyer, affinities Af
 			supplier.CapRest -= amount
 			allocated += amount
 			matches[buyer.ID] = append(matches[buyer.ID], BuyRecord{supplier.ID, amount})
-			if allocated >= buyer.DemandRest {
+			if allocated >= demandRest && len(matches[buyer.ID]) >= m.enough {
 				break
 			}
 		}

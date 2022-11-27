@@ -48,30 +48,30 @@ var createCmd = &cli.Command{
 		&cli.Int64Flag{
 			Name:     "bw",
 			Required: true,
-			Usage:    "specify the total bandwidth (Gbps)",
+			Usage:    "specify the total bandwidth [Gbps]",
 		},
 		&cli.Float64Flag{
 			Name:     "ras",
 			Required: false,
 			Value:    50.0,
-			Usage:    "specify the remote access score (40.0-80.0)",
+			Usage:    "specify the remote access score [20.0-80.0]",
 		},
 		&cli.Float64Flag{
 			Name:     "ral",
 			Required: false,
 			Value:    0.1,
-			Usage:    "specify the remote access limit (0.0-1.0)",
+			Usage:    "specify the remote access limit [0.0-1.0]",
 		},
 		&cli.Float64Flag{
 			Name:     "rjs",
 			Required: false,
 			Value:    80.0,
-			Usage:    "specify the reject score (80.0-100.0)",
+			Usage:    "specify the reject score [80.0-100.0]",
 		},
 		&cli.StringSliceFlag{
 			Name:     "modl",
 			Required: false,
-			Usage:    "specify a mode limit (mix=0.5)",
+			Usage:    "specify a mode limit [mix=0.5]",
 		},
 		&cli.BoolFlag{
 			Name:     "vv",
@@ -94,7 +94,7 @@ var createCmd = &cli.Command{
 		if bw <= 0 {
 			return errors.New("invalid bw")
 		}
-		if !(ras >= 40.0 && ras <= 80.0) {
+		if !(ras >= 20.0 && ras <= 80.0) {
 			return errors.New("invalid ras")
 		}
 		if !(ral >= 0.0 && ral <= 1.0) {

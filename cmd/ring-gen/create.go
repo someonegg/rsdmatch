@@ -20,6 +20,7 @@ import (
 
 const (
 	scoreSensitivity = 10.0
+	enoughNodeCount  = 5
 	bwUnit           = 100 // Mbps
 )
 
@@ -71,12 +72,12 @@ func doCreate(ctx context.Context, nodeFile, viewFile, allocFile string,
 	fmt.Printf("nodes: %v, views: %v, needs: %v, has: %v\n", len(suppliers), len(buyers), bwNeeds*bwUnit, bwHas*bwUnit)
 	fmt.Println("")
 
-	matches, perfect := rsdmatch.GreedyMatcher(scoreSensitivity, verbose).Match(suppliers, buyers,
-		affinityTable{
-			ras: ras,
-			ral: ral,
-			rjs: rjs,
-		})
+	matches, perfect := rsdmatch.GreedyMatcher(scoreSensitivity, enoughNodeCount,
+		verbose).Match(suppliers, buyers, affinityTable{
+		ras: ras,
+		ral: ral,
+		rjs: rjs,
+	})
 	fmt.Println("")
 
 	err = writeAllocs(allocFile, matches)
@@ -135,6 +136,10 @@ func loadNodes(file string) ([]rsdmatch.Supplier, int64, error) {
 		return nil, 0, err
 	}
 
+	sort.Slice(nodes, func(i, j int) bool {
+		return nodes[i].Node < nodes[j].Node
+	})
+
 	var bwHas int64
 
 	suppliers := make([]rsdmatch.Supplier, len(nodes))
@@ -171,6 +176,10 @@ func loadViews(file string, bw int64) ([]rsdmatch.Buyer, int64, error) {
 	if err := decoder.Decode(&views); err != nil {
 		return nil, 0, err
 	}
+
+	sort.Slice(views, func(i, j int) bool {
+		return views[i].Percent > views[j].Percent
+	})
 
 	var bwNeeds int64
 
