@@ -107,14 +107,26 @@ func loadViews(file string, total float64) ([]*bw.View, error) {
 
 	for i, view := range views {
 		bwvs[i] = &view.View
-		// 默认-广东-华南-移动-中国-亚洲
-		ss := strings.Split(view.View.View, "-")
-		bwvs[i].View = ss[1] + "-" + ss[3]
-		bwvs[i].ISP = ss[3]
-		bwvs[i].Province = ss[1]
-		bwvs[i].Bandwidth = view.Percent * total
+		if bwvs[i].Bandwidth == 0.0 {
+			bwvs[i].Bandwidth = view.Percent * total
+		}
+		if bwvs[i].ISP == "" || bwvs[i].Province == "" {
+			ss := strings.Split(bwvs[i].View, "-")
+			if len(ss) == 6 {
+				// 默认-广东-华南-移动-中国-亚洲
+				bwvs[i].ISP = ss[3]
+				bwvs[i].Province = ss[1]
+				bwvs[i].View = bwvs[i].Province + "-" + bwvs[i].ISP
+			} else if len(ss) == 2 {
+				// 广东-移动
+				bwvs[i].ISP = ss[1]
+				bwvs[i].Province = ss[0]
+			} else {
+				bwvs[i].Bandwidth = 0.0 // disabled
+			}
+		}
 		if bwvs[i].ISP == "默认" || bwvs[i].Province == "默认" {
-			bwvs[i].Bandwidth = 0.0
+			bwvs[i].Bandwidth = 0.0 // disabled
 		}
 	}
 
