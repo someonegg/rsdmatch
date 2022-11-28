@@ -88,7 +88,7 @@ func (m greedyMatcher) Match(suppliers []Supplier, buyers []Buyer, affinities Af
 		}
 
 		if m.verbose {
-			fmt.Println(start, end, al[start].price, buyer.ID,
+			fmt.Println(al[start].price, buyer.ID,
 				"demand:", buyer.Demand, "demand_rest:", demandRest, "available:", available)
 		}
 
@@ -105,7 +105,7 @@ func (m greedyMatcher) Match(suppliers []Supplier, buyers []Buyer, affinities Af
 				continue
 			}
 			if m.verbose {
-				fmt.Println("-", al[i].supplier.ID, al[i].supplier.Info, amount)
+				fmt.Println("  ", al[i].supplier.Info, amount)
 			}
 			supplier.CapRest -= amount
 			allocated += amount
