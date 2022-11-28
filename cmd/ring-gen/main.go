@@ -45,10 +45,16 @@ var createCmd = &cli.Command{
 			Required: true,
 			Usage:    "specify the output alloc.json",
 		},
-		&cli.Int64Flag{
+		&cli.Float64Flag{
 			Name:     "bw",
 			Required: true,
 			Usage:    "specify the total bandwidth [Gbps]",
+		},
+		&cli.IntFlag{
+			Name:     "ecn",
+			Required: false,
+			Value:    5,
+			Usage:    "specify the enough node count for a view",
 		},
 		&cli.Float64Flag{
 			Name:     "ras",
@@ -57,16 +63,16 @@ var createCmd = &cli.Command{
 			Usage:    "specify the remote access score [20.0-80.0]",
 		},
 		&cli.Float64Flag{
-			Name:     "ral",
-			Required: false,
-			Value:    0.1,
-			Usage:    "specify the remote access limit [0.0-1.0]",
-		},
-		&cli.Float64Flag{
 			Name:     "rjs",
 			Required: false,
 			Value:    80.0,
 			Usage:    "specify the reject score [80.0-100.0]",
+		},
+		&cli.Float64Flag{
+			Name:     "ral",
+			Required: false,
+			Value:    0.1,
+			Usage:    "specify the remote access limit [0.0-1.0]",
 		},
 		&cli.StringSliceFlag{
 			Name:     "modl",
@@ -85,10 +91,11 @@ var createCmd = &cli.Command{
 			nodeFile  = ctx.String("node")
 			viewFile  = ctx.String("view")
 			allocFile = ctx.String("alloc")
-			bw        = ctx.Int64("bw")
-			ras       = ctx.Float64("ras")
-			ral       = ctx.Float64("ral")
-			rjs       = ctx.Float64("rjs")
+			bw        = ctx.Float64("bw")
+			ecn       = ctx.Int("ecn")
+			ras       = float32(ctx.Float64("ras"))
+			rjs       = float32(ctx.Float64("rjs"))
+			ral       = float32(ctx.Float64("ral"))
 			verbose   = ctx.Bool("vv")
 		)
 		if bw <= 0 {
@@ -97,11 +104,11 @@ var createCmd = &cli.Command{
 		if !(ras >= 20.0 && ras <= 80.0) {
 			return errors.New("invalid ras")
 		}
-		if !(ral >= 0.0 && ral <= 1.0) {
-			return errors.New("invalid ral")
-		}
 		if !(rjs >= 80.0 && rjs <= 100.0) {
 			return errors.New("invalid rjs")
+		}
+		if !(ral >= 0.0 && ral <= 1.0) {
+			return errors.New("invalid ral")
 		}
 		for _, s := range ctx.StringSlice("modl") {
 			pair := strings.Split(s, "=")
@@ -117,6 +124,7 @@ var createCmd = &cli.Command{
 			}
 			limitOfMode[pair[0]] = modl
 		}
-		return doCreate(ctx.Context, nodeFile, viewFile, allocFile, bw, ras, ral, rjs, verbose)
+		return doCreate(ctx.Context, nodeFile, viewFile, allocFile, bw,
+			ecn, ras, rjs, ral, verbose)
 	},
 }
