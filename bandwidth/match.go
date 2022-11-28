@@ -62,20 +62,20 @@ func (m *Matcher) Find(supplier *rsdmatch.Supplier, buyer *rsdmatch.Buyer) rsdma
 	if score < m.rjs {
 		return rsdmatch.Affinity{
 			Price: score,
-			Limit: remoteAccessLimit(m.ral),
+			Limit: nodePercentLimit(m.ral),
 		}
 	}
 	// reject
 	return rsdmatch.Affinity{
 		Price: score,
-		Limit: remoteAccessLimit(0.0),
+		Limit: nodePercentLimit(0.0),
 	}
 }
 
-type remoteAccessLimit float32
+type nodePercentLimit float32
 
-func (l remoteAccessLimit) Calculate(supplierCap, buyerDemand int64) int64 {
-	return int64(math.Ceil(float64(supplierCap) * float64(l)))
+func (p nodePercentLimit) Calculate(supplierCap, buyerDemand int64) int64 {
+	return int64(math.Ceil(float64(supplierCap) * float64(p)))
 }
 
 func (m *Matcher) Match(nodes []*Node, views []*View) (allocs []*Alloc, perfect bool) {
