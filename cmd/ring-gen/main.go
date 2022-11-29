@@ -30,25 +30,28 @@ var createCmd = &cli.Command{
 	Usage:   "Create a scheduling ring",
 	Aliases: []string{"c"},
 	Flags: []cli.Flag{
-		&cli.StringFlag{
-			Name:     "node",
-			Required: true,
-			Usage:    "specify the input node.json",
-		},
-		&cli.StringFlag{
-			Name:     "view",
-			Required: true,
-			Usage:    "specify the intput view.json",
-		},
-		&cli.StringFlag{
-			Name:     "alloc",
-			Required: true,
-			Usage:    "specify the output alloc.json",
-		},
 		&cli.Float64Flag{
 			Name:     "bw",
 			Required: true,
 			Usage:    "specify the total bandwidth [Gbps]",
+		},
+		&cli.StringFlag{
+			Name:     "node",
+			Required: false,
+			Value:    "node.json",
+			Usage:    "specify the input node.json",
+		},
+		&cli.StringFlag{
+			Name:     "view",
+			Required: false,
+			Value:    "view.json",
+			Usage:    "specify the intput view.json",
+		},
+		&cli.StringFlag{
+			Name:     "alloc",
+			Required: false,
+			Value:    "alloc.json",
+			Usage:    "specify the output alloc.json",
 		},
 		&cli.IntFlag{
 			Name:     "ecn",
@@ -82,16 +85,16 @@ var createCmd = &cli.Command{
 		&cli.BoolFlag{
 			Name:     "vv",
 			Required: false,
-			Value:    false,
+			Value:    true,
 			Usage:    "verbose mode",
 		},
 	},
 	Action: func(ctx *cli.Context) error {
 		var (
+			bw        = ctx.Float64("bw")
 			nodeFile  = ctx.String("node")
 			viewFile  = ctx.String("view")
 			allocFile = ctx.String("alloc")
-			bw        = ctx.Float64("bw")
 			ecn       = ctx.Int("ecn")
 			ras       = float32(ctx.Float64("ras"))
 			rjs       = float32(ctx.Float64("rjs"))
@@ -124,7 +127,7 @@ var createCmd = &cli.Command{
 			}
 			limitOfMode[pair[0]] = modl
 		}
-		return doCreate(ctx.Context, nodeFile, viewFile, allocFile, bw,
+		return doCreate(ctx.Context, bw, nodeFile, viewFile, allocFile,
 			ecn, ras, rjs, ral, verbose)
 	},
 }

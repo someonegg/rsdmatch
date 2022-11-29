@@ -31,7 +31,7 @@ type Allocs struct {
 	Views []*bw.Alloc `json:"views"`
 }
 
-func doCreate(ctx context.Context, nodeFile, viewFile, allocFile string, total float64,
+func doCreate(ctx context.Context, total float64, nodeFile, viewFile, allocFile string,
 	ecn int, ras, rjs float32, ral float32, verbose bool) error {
 
 	nodes, err := loadNodes(nodeFile)
