@@ -68,6 +68,7 @@ func init() {
 //	AdjacentRegion: 80
 //	Other: 90
 func ScoreOfDistance(a, b Location) (score float32, sameRegion bool) {
+	a, b = UnifyLocation(a), UnifyLocation(b)
 	rA, rB := regionMap[a.Province], regionMap[b.Province]
 	sameRegion = rA == rB
 
