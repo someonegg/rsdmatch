@@ -4,8 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"strconv"
-	"strings"
 
 	"github.com/urfave/cli/v2"
 )
@@ -77,11 +75,6 @@ var createCmd = &cli.Command{
 			Value:    0.1,
 			Usage:    "specify the remote access limit [0.0-1.0]",
 		},
-		&cli.StringSliceFlag{
-			Name:     "modl",
-			Required: false,
-			Usage:    "specify a mode limit [mix=0.5]",
-		},
 		&cli.BoolFlag{
 			Name:     "vv",
 			Required: false,
@@ -112,20 +105,6 @@ var createCmd = &cli.Command{
 		}
 		if !(ral >= 0.0 && ral <= 1.0) {
 			return errors.New("invalid ral")
-		}
-		for _, s := range ctx.StringSlice("modl") {
-			pair := strings.Split(s, "=")
-			if len(pair) != 2 {
-				return errors.New("invalid modl")
-			}
-			modl, err := strconv.ParseFloat(pair[1], 64)
-			if err != nil {
-				return errors.New("invalid modl")
-			}
-			if !(modl >= 0.0 && modl <= 1.0) {
-				return errors.New("invalid modl")
-			}
-			limitOfMode[pair[0]] = modl
 		}
 		return doCreate(ctx.Context, bw, nodeFile, viewFile, allocFile,
 			ecn, ras, rjs, ral, verbose)

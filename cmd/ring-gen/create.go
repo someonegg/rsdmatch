@@ -15,11 +15,8 @@ import (
 	bw "github.com/someonegg/rsdmatch/bandwidth"
 )
 
-var limitOfMode = make(map[string]float64)
-
-type Node struct {
-	bw.Node
-	Mode string `json:"mode"`
+type Nodes struct {
+	Nodes []*bw.Node `json:"nodes"`
 }
 
 type View struct {
@@ -71,23 +68,14 @@ func loadNodes(file string) ([]*bw.Node, error) {
 		return nil, err
 	}
 
-	var nodes []*Node
+	var nodes Nodes
 
 	decoder := json.NewDecoder(bytes.NewReader(data))
 	if err := decoder.Decode(&nodes); err != nil {
 		return nil, err
 	}
 
-	bwns := make([]*bw.Node, len(nodes))
-
-	for i, node := range nodes {
-		bwns[i] = &node.Node
-		if modl, ok := limitOfMode[node.Mode]; ok {
-			bwns[i].Bandwidth *= modl
-		}
-	}
-
-	return bwns, nil
+	return nodes.Nodes, nil
 }
 
 func loadViews(file string, total float64) ([]*bw.View, error) {
