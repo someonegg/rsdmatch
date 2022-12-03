@@ -23,19 +23,6 @@ const (
 	xiZang
 )
 
-var regions = map[int][]string{
-	dongBei:  {"吉林", "辽宁", "黑龙江"},
-	huaBei:   {"北京", "天津", "河北", "山西", "内蒙古"},
-	huaZhbei: {"山东", "河南"},
-	huaZhnan: {"湖北", "湖南"},
-	huaDong:  {"江苏", "安徽", "浙江", "江西", "福建", "上海", "台湾"},
-	huaNan:   {"广东", "广西", "海南", "香港", "澳门"},
-	xiBei:    {"陕西", "宁夏", "甘肃", "青海"},
-	xiNan:    {"四川", "云南", "贵州", "重庆"},
-	xinJiang: {"新疆"},
-	xiZang:   {"西藏"},
-}
-
 var regionNeighbors = map[int][]int{
 	dongBei:  {huaBei},
 	huaBei:   {dongBei, huaZhbei, xiBei},
@@ -52,6 +39,19 @@ var regionNeighbors = map[int][]int{
 var regionMap map[string]int
 
 func init() {
+	regions := map[int][]string{
+		dongBei:  {"吉林", "辽宁", "黑龙江"},
+		huaBei:   {"北京", "天津", "河北", "山西", "内蒙古"},
+		huaZhbei: {"山东", "河南"},
+		huaZhnan: {"湖北", "湖南"},
+		huaDong:  {"江苏", "安徽", "浙江", "江西", "福建", "上海", "台湾"},
+		huaNan:   {"广东", "广西", "海南", "香港", "澳门"},
+		xiBei:    {"陕西", "宁夏", "甘肃", "青海"},
+		xiNan:    {"四川", "云南", "贵州", "重庆"},
+		xinJiang: {"新疆"},
+		xiZang:   {"西藏"},
+	}
+
 	regionMap = make(map[string]int)
 	for region, provinces := range regions {
 		for _, province := range provinces {
@@ -60,13 +60,26 @@ func init() {
 	}
 }
 
+var centralMap map[string]bool
+
+func init() {
+	provinces := []string{"辽宁", "北京", "天津", "河北", "山西", "山东", "河南", "湖北", "湖南",
+		"江苏", "安徽", "浙江", "江西", "福建", "上海", "广东", "广西", "陕西", "四川", "贵州", "重庆"}
+
+	centralMap = make(map[string]bool)
+	for _, province := range provinces {
+		centralMap[province] = true
+	}
+}
+
 // ScoreOfDistance rules:
 //
 //	ISP_Province: 10
 //	ISP_Region: 20
-//	ISP_AdjacentRegion: 40
-//	Province: 50, !(xinJiang || xiZang)
-//	Region: 60, !(xinJiang || xiZang)
+//	ISP_AdjacentRegion: 30
+//	Province: 40, !(xinJiang || xiZang)
+//	Region: 50, !(xinJiang || xiZang)
+//	ISP_Central: 60
 //	ISP: 70
 //	AdjacentRegion: 80
 //	Other: 90
@@ -88,9 +101,14 @@ func ScoreOfDistance(a, b Location) (score float32, sameRegion bool) {
 
 		for _, r := range regionNeighbors[rA] {
 			if rB == r {
-				score = 40.0
+				score = 30.0
 				return
 			}
+		}
+
+		if centralMap[a.Province] && centralMap[b.Province] {
+			score = 60
+			return
 		}
 
 		score = 70.0
@@ -103,12 +121,12 @@ func ScoreOfDistance(a, b Location) (score float32, sameRegion bool) {
 
 	if isNormal(rA) && isNormal(rB) {
 		if a.Province == b.Province {
-			score = 50.0
+			score = 40.0
 			return
 		}
 
 		if sameRegion {
-			score = 60.0
+			score = 50.0
 			return
 		}
 	}
