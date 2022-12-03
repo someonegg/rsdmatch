@@ -33,6 +33,13 @@ var createCmd = &cli.Command{
 			Required: true,
 			Usage:    "specify the total bandwidth [Gbps]",
 		},
+		&cli.Float64Flag{
+			Name:     "scale",
+			Aliases:  []string{"s"},
+			Required: false,
+			Value:    1.0,
+			Usage:    "specify the scale of bandwidth",
+		},
 		&cli.StringFlag{
 			Name:     "node",
 			Required: false,
@@ -85,6 +92,7 @@ var createCmd = &cli.Command{
 	Action: func(ctx *cli.Context) error {
 		var (
 			bw        = ctx.Float64("bw")
+			scale     = ctx.Float64("scale")
 			nodeFile  = ctx.String("node")
 			viewFile  = ctx.String("view")
 			allocFile = ctx.String("alloc")
@@ -97,6 +105,9 @@ var createCmd = &cli.Command{
 		if bw <= 0 {
 			return errors.New("invalid bw")
 		}
+		if !(scale >= 0.0 && scale <= 1.0) {
+			return errors.New("invalid scale")
+		}
 		if !(ras >= 20.0 && ras <= 80.0) {
 			return errors.New("invalid ras")
 		}
@@ -106,7 +117,9 @@ var createCmd = &cli.Command{
 		if !(ral >= 0.0 && ral <= 1.0) {
 			return errors.New("invalid ral")
 		}
-		return doCreate(ctx.Context, bw, nodeFile, viewFile, allocFile,
+		return doCreate(
+			ctx.Context, bw, scale,
+			nodeFile, viewFile, allocFile,
 			ecn, ras, rjs, ral, verbose)
 	},
 }

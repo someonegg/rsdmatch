@@ -28,7 +28,8 @@ type Allocs struct {
 	Views []*bw.Alloc `json:"views"`
 }
 
-func doCreate(ctx context.Context, total float64, nodeFile, viewFile, allocFile string,
+func doCreate(ctx context.Context, total, scale float64,
+	nodeFile, viewFile, allocFile string,
 	ecn int, ras, rjs float32, ral float32, verbose bool) error {
 
 	nodes, err := loadNodes(nodeFile)
@@ -36,7 +37,7 @@ func doCreate(ctx context.Context, total float64, nodeFile, viewFile, allocFile 
 		return fmt.Errorf("load node file failed: %w", err)
 	}
 
-	views, err := loadViews(viewFile, total)
+	views, err := loadViews(viewFile, total, scale)
 	if err != nil {
 		return fmt.Errorf("load view file failed: %w", err)
 	}
@@ -78,7 +79,7 @@ func loadNodes(file string) ([]*bw.Node, error) {
 	return nodes.Nodes, nil
 }
 
-func loadViews(file string, total float64) ([]*bw.View, error) {
+func loadViews(file string, total, scale float64) ([]*bw.View, error) {
 	data, err := ioutil.ReadFile(file)
 	if err != nil {
 		return nil, err
@@ -116,6 +117,7 @@ func loadViews(file string, total float64) ([]*bw.View, error) {
 		if bwvs[i].ISP == "默认" || bwvs[i].Province == "默认" {
 			bwvs[i].Bandwidth = 0.0 // disabled
 		}
+		bwvs[i].Bandwidth *= scale
 	}
 
 	return bwvs, nil
