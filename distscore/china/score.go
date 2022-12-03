@@ -13,7 +13,8 @@ const (
 	unknown = iota
 	dongBei
 	huaBei
-	huaZhong
+	huaZhbei
+	huaZhnan
 	huaDong
 	huaNan
 	xiBei
@@ -25,8 +26,9 @@ const (
 var regions = map[int][]string{
 	dongBei:  {"吉林", "辽宁", "黑龙江"},
 	huaBei:   {"北京", "天津", "河北", "山西", "内蒙古"},
-	huaZhong: {"河南", "湖北", "湖南"},
-	huaDong:  {"山东", "江苏", "安徽", "浙江", "江西", "福建", "上海", "台湾"},
+	huaZhbei: {"山东", "河南"},
+	huaZhnan: {"湖北", "湖南"},
+	huaDong:  {"江苏", "安徽", "浙江", "江西", "福建", "上海", "台湾"},
 	huaNan:   {"广东", "广西", "海南", "香港", "澳门"},
 	xiBei:    {"陕西", "宁夏", "甘肃", "青海"},
 	xiNan:    {"四川", "云南", "贵州", "重庆"},
@@ -36,12 +38,13 @@ var regions = map[int][]string{
 
 var regionNeighbors = map[int][]int{
 	dongBei:  {huaBei},
-	huaBei:   {dongBei},
-	huaZhong: {huaDong, huaNan, xiBei, xiNan},
-	huaDong:  {huaZhong, huaNan},
-	huaNan:   {huaZhong, huaDong},
-	xiBei:    {huaZhong, xiNan, xinJiang},
-	xiNan:    {huaZhong, xiBei, xiZang},
+	huaBei:   {dongBei, huaZhbei, xiBei},
+	huaZhbei: {huaZhnan, huaBei, huaDong, xiBei},
+	huaZhnan: {huaZhbei, huaDong, huaNan, xiNan},
+	huaDong:  {huaZhbei, huaZhnan, huaNan},
+	huaNan:   {huaZhnan, huaDong, xiNan},
+	xiBei:    {huaZhbei, huaBei, xinJiang},
+	xiNan:    {huaZhnan, huaNan, xiZang},
 	xinJiang: {xiBei},
 	xiZang:   {xiNan},
 }
