@@ -16,7 +16,12 @@ import (
 )
 
 type Nodes struct {
-	Nodes []*bw.Node `json:"nodes"`
+	Nodes []*Node `json:"nodes"`
+}
+
+type Node struct {
+	bw.Node
+	Storage int64 `json:"storage"`
 }
 
 type View struct {
@@ -76,7 +81,17 @@ func loadNodes(file string) ([]*bw.Node, error) {
 		return nil, err
 	}
 
-	return nodes.Nodes, nil
+	bwns := make([]*bw.Node, len(nodes.Nodes))
+
+	for i, node := range nodes.Nodes {
+		bwns[i] = &node.Node
+		if node.Storage > 0 {
+			// normalize to TB
+			bwns[i].Bandwidth = float64(node.Storage/1000000) / 1000000.0
+		}
+	}
+
+	return bwns, nil
 }
 
 func loadViews(file string, total, scale float64) ([]*bw.View, error) {
