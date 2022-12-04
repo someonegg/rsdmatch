@@ -78,8 +78,10 @@ func (p nodePercentLimit) Calculate(supplierCap, buyerDemand int64) int64 {
 	return int64(math.Ceil(float64(supplierCap) * float64(p)))
 }
 
-func (m *Matcher) Match(nodes []*Node, views []*View) (allocs []*Alloc, perfect bool) {
+func (m *Matcher) Match(nodes []*Node, views []*View) (allocs []*Alloc, perfect bool, summary Summary) {
 	m.init()
+
+	var summ Summary
 
 	suppliers, bwHas := genSuppliers(nodes)
 	buyers, bwNeeds := genBuyers(views)
@@ -88,6 +90,10 @@ func (m *Matcher) Match(nodes []*Node, views []*View) (allocs []*Alloc, perfect 
 		fmt.Printf("nodes: %v, views: %v, needs: %v, has: %v\n", len(suppliers), len(buyers), bwNeeds*bwUnit, bwHas*bwUnit)
 		fmt.Println("")
 	}
+	summ.NodesCount = len(suppliers)
+	summ.ViewsCount = len(buyers)
+	summ.NodesBandwidth = float64(bwHas) / float64(1000/bwUnit)
+	summ.ViewsBandwidth = float64(bwNeeds) / float64(1000/bwUnit)
 
 	matches, perfect := rsdmatch.GreedyMatcher(scoreSensitivity, m.ecn,
 		m.Verbose).Match(suppliers, buyers, m)
@@ -95,7 +101,7 @@ func (m *Matcher) Match(nodes []*Node, views []*View) (allocs []*Alloc, perfect 
 		fmt.Println()
 	}
 
-	if m.Verbose {
+	{
 		sort.Slice(buyers, func(i, j int) bool {
 			return buyers[i].DemandRest > buyers[j].DemandRest
 		})
@@ -103,18 +109,21 @@ func (m *Matcher) Match(nodes []*Node, views []*View) (allocs []*Alloc, perfect 
 		for _, buyer := range buyers {
 			if rest := buyer.DemandRest; rest > 0 {
 				rests += rest
-				fmt.Println(buyer.ID, "demand:", buyer.Demand*bwUnit, "demand_rest:", rest*bwUnit)
+				if m.Verbose {
+					fmt.Println(buyer.ID, "demand:", buyer.Demand*bwUnit, "demand_rest:", rest*bwUnit)
+				}
 			} else {
 				break
 			}
 		}
-		if rests > 0 {
+		if m.Verbose && rests > 0 {
 			fmt.Println("total needs", rests*bwUnit)
 			fmt.Println("")
 		}
+		summ.BandwidthNeeds = float64(rests) / float64(1000/bwUnit)
 	}
 
-	if m.Verbose {
+	{
 		sort.Slice(suppliers, func(i, j int) bool {
 			return suppliers[i].CapRest > suppliers[j].CapRest
 		})
@@ -123,18 +132,21 @@ func (m *Matcher) Match(nodes []*Node, views []*View) (allocs []*Alloc, perfect 
 			if rest := supplier.CapRest; rest > 0 {
 				rests += rest
 				node := supplier.Info.(*Node)
-				fmt.Println(node.ISP, node.Province, supplier.ID, "cap:", supplier.Cap*bwUnit, "cap_rest:", rest*bwUnit)
+				if m.Verbose {
+					fmt.Println(node.ISP, node.Province, supplier.ID, "cap:", supplier.Cap*bwUnit, "cap_rest:", rest*bwUnit)
+				}
 			} else {
 				break
 			}
 		}
-		if rests > 0 {
+		if m.Verbose && rests > 0 {
 			fmt.Println("total remains", rests*bwUnit)
 			fmt.Println("")
 		}
+		summ.BandwidthRemains = float64(rests) / float64(1000/bwUnit)
 	}
 
-	return genAllocs(matches), perfect
+	return genAllocs(matches), perfect, summ
 }
 
 func genSuppliers(nodes []*Node) ([]rsdmatch.Supplier, int64) {

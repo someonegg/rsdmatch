@@ -49,3 +49,12 @@ type Matcher struct {
 	rjs float32
 	ral float32
 }
+
+type Summary struct {
+	NodesCount       int     `json:"nodes"`
+	ViewsCount       int     `json:"views"`
+	NodesBandwidth   float64 `json:"nodes_bw"`
+	ViewsBandwidth   float64 `json:"views_bw"`
+	BandwidthNeeds   float64 `json:"bw_needs"`
+	BandwidthRemains float64 `json:"bw_remains"`
+}

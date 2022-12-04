@@ -55,10 +55,11 @@ func doCreate(ctx context.Context, total, scale float64,
 		Verbose:           verbose,
 	}
 
-	allocs, perfect := matcher.Match(nodes, views)
+	allocs, perfect, summ := matcher.Match(nodes, views)
 	if perfect {
 		fmt.Println("perfect match")
 	}
+	fmt.Printf("%+v\n", summ)
 
 	err = writeAllocs(allocFile, allocs)
 	if err != nil {

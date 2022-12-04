@@ -85,7 +85,7 @@ var createCmd = &cli.Command{
 		&cli.BoolFlag{
 			Name:     "vv",
 			Required: false,
-			Value:    true,
+			Value:    false,
 			Usage:    "verbose mode",
 		},
 	},
