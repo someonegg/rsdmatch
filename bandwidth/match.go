@@ -47,7 +47,7 @@ func (m *Matcher) init() {
 func (m *Matcher) Find(supplier *rsdmatch.Supplier, buyer *rsdmatch.Buyer) rsdmatch.Affinity {
 	node := supplier.Info.(*Node)
 	view := buyer.Info.(*View)
-	score, _ := china.ScoreOfDistance(
+	score := china.ScoreOfDistance(
 		china.Location{ISP: node.ISP, Province: node.Province},
 		china.Location{ISP: view.ISP, Province: view.Province},
 	)
