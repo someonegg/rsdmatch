@@ -19,8 +19,11 @@ const (
 	huaNan
 	xiBei
 	xiNan
+	haiNan
 	xinJiang
 	xiZang
+	taiWan
+	hkmo
 )
 
 var regionNeighbors = map[int][]int{
@@ -29,9 +32,10 @@ var regionNeighbors = map[int][]int{
 	huaZhbei: {huaZhnan, huaBei, huaDong, xiBei},
 	huaZhnan: {huaZhbei, huaDong, huaNan, xiNan},
 	huaDong:  {huaZhbei, huaZhnan, huaNan},
-	huaNan:   {huaZhnan, huaDong, xiNan},
+	huaNan:   {huaZhnan, huaDong, xiNan, haiNan},
 	xiBei:    {huaZhbei, huaBei, xinJiang},
 	xiNan:    {huaZhnan, huaNan, xiZang},
+	haiNan:   {huaNan},
 	xinJiang: {xiBei},
 	xiZang:   {xiNan},
 }
@@ -44,12 +48,15 @@ func init() {
 		huaBei:   {"北京", "天津", "河北", "山西", "内蒙古"},
 		huaZhbei: {"山东", "河南"},
 		huaZhnan: {"湖北", "湖南"},
-		huaDong:  {"江苏", "安徽", "浙江", "江西", "福建", "上海", "台湾"},
-		huaNan:   {"广东", "广西", "海南", "香港", "澳门"},
+		huaDong:  {"江苏", "安徽", "浙江", "江西", "福建", "上海"},
+		huaNan:   {"广东", "广西"},
 		xiBei:    {"陕西", "宁夏", "甘肃", "青海"},
 		xiNan:    {"四川", "云南", "贵州", "重庆"},
+		haiNan:   {"海南"},
 		xinJiang: {"新疆"},
 		xiZang:   {"西藏"},
+		taiWan:   {"台湾"},
+		hkmo:     {"香港", "澳门"},
 	}
 
 	regionMap = make(map[string]int)
