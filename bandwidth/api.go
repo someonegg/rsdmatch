@@ -10,6 +10,7 @@ type Node struct {
 	ISP       string  `json:"isp"`
 	Province  string  `json:"province"`
 	Bandwidth float64 `json:"bw"` // Gbps
+	LocalOnly bool    `json:"local_only"`
 }
 
 type View struct {
