@@ -37,11 +37,18 @@ func doCreate(ctx context.Context, total, scale float64,
 	nodeFile, viewFile, allocFile string,
 	ecn int, ras, rjs float32, ral float32, verbose bool) error {
 
+	autoScale := false
+	if scale <= 0.0 {
+		autoScale = true
+		scale = 1.0
+	}
+
 	nodes, err := loadNodes(nodeFile)
 	if err != nil {
 		return fmt.Errorf("load node file failed: %w", err)
 	}
 
+AUTOSCALE:
 	views, err := loadViews(viewFile, total, scale)
 	if err != nil {
 		return fmt.Errorf("load view file failed: %w", err)
@@ -56,6 +63,13 @@ func doCreate(ctx context.Context, total, scale float64,
 	}
 
 	allocs, perfect, summ := matcher.Match(nodes, views)
+
+	if autoScale {
+		autoScale = false
+		scale = summ.NodesBandwidth / summ.ViewsBandwidth
+		goto AUTOSCALE
+	}
+
 	if perfect {
 		fmt.Println("perfect match")
 	}
