@@ -156,9 +156,9 @@ func genSuppliers(nodes []*Node) ([]rsdmatch.Supplier, int64) {
 
 	for i, node := range nodes {
 		suppliers[i].ID = node.Node
-		suppliers[i].Cap = int64(math.Ceil(node.Bandwidth * float64(1000/bwUnit)))
+		suppliers[i].Cap = int64(math.Floor(node.Bandwidth * float64(1000/bwUnit)))
 		suppliers[i].Info = node
-		if suppliers[i].Cap == 0 || node.ISP == "" || node.Province == "" {
+		if node.ISP == "" || node.Province == "" {
 			suppliers[i].Cap = 0
 			fmt.Println("node", node.Node, "is incomplete")
 		}
