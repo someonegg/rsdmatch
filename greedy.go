@@ -25,8 +25,23 @@ type greedyAffinity struct {
 	supplier *Supplier
 	buyer    *Buyer
 
-	price int
+	price float32
 	limit int64
+}
+
+func (m greedyMatcher) sensCompare(a, b float32) int {
+	iA, iB := int(a/m.sens), int(b/m.sens)
+	return iA - iB
+}
+
+func (m greedyMatcher) ptrCompare(a, b unsafe.Pointer) int {
+	if uintptr(a) < uintptr(b) {
+		return -1
+	}
+	if uintptr(a) > uintptr(b) {
+		return 1
+	}
+	return 0
 }
 
 func (m greedyMatcher) Match(suppliers []Supplier, buyers []Buyer, affinities AffinityTable) (matches Matches, perfect bool) {
@@ -45,7 +60,7 @@ func (m greedyMatcher) Match(suppliers []Supplier, buyers []Buyer, affinities Af
 			al[n] = greedyAffinity{
 				supplier: &suppliers[i],
 				buyer:    &buyers[j],
-				price:    int(a.Price / m.sens),
+				price:    a.Price,
 				limit:    math.MaxInt64,
 			}
 			if a.Limit != nil {
@@ -56,8 +71,21 @@ func (m greedyMatcher) Match(suppliers []Supplier, buyers []Buyer, affinities Af
 	}
 
 	sort.SliceStable(al, func(i, j int) bool {
-		return al[i].price < al[j].price || al[i].price == al[j].price &&
-			uintptr(unsafe.Pointer(al[i].buyer)) < uintptr(unsafe.Pointer(al[j].buyer))
+		r1 := m.sensCompare(al[i].price, al[j].price)
+		if r1 < 0 {
+			return true
+		}
+		if r1 > 0 {
+			return false
+		}
+		r2 := m.ptrCompare(unsafe.Pointer(al[i].buyer), unsafe.Pointer(al[j].buyer))
+		if r2 < 0 {
+			return true
+		}
+		if r2 > 0 {
+			return false
+		}
+		return al[i].price < al[j].price
 	})
 
 	matches = make(Matches, len(buyers))
@@ -67,7 +95,7 @@ func (m greedyMatcher) Match(suppliers []Supplier, buyers []Buyer, affinities Af
 
 		end = start + 1
 		for end < len(al) {
-			if al[end].price != al[start].price || al[end].buyer != buyer {
+			if m.sensCompare(al[end].price, al[start].price) != 0 || al[end].buyer != buyer {
 				break
 			}
 			end++
