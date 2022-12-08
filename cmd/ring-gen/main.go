@@ -37,7 +37,7 @@ var createCmd = &cli.Command{
 			Name:     "scale",
 			Aliases:  []string{"s"},
 			Required: false,
-			Value:    0.0,
+			Value:    1.0,
 			Usage:    "specify the scale of bandwidth",
 		},
 		&cli.StringFlag{
