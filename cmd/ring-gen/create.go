@@ -48,7 +48,6 @@ func doCreate(ctx context.Context, total, scale float64,
 		return fmt.Errorf("load node file failed: %w", err)
 	}
 
-AUTOSCALE:
 	views, err := loadViews(viewFile, total, scale)
 	if err != nil {
 		return fmt.Errorf("load view file failed: %w", err)
@@ -59,17 +58,11 @@ AUTOSCALE:
 		RemoteAccessScore: &ras,
 		RejectScore:       &rjs,
 		RemoteAccessLimit: &ral,
+		AutoScale:         autoScale,
 		Verbose:           verbose,
 	}
 
 	allocs, perfect, summ := matcher.Match(nodes, views)
-
-	if autoScale {
-		autoScale = false
-		scale = summ.NodesBandwidth / summ.ViewsBandwidth
-		goto AUTOSCALE
-	}
-
 	if perfect {
 		fmt.Println("perfect match")
 	}

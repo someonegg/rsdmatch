@@ -99,7 +99,10 @@ func (m *Matcher) Match(nodes []*Node, views []*View) (allocs []*Alloc, perfect 
 	var summ Summary
 
 	suppliers, bwHas := genSuppliers(nodes)
-	buyers, bwNeeds := genBuyers(views)
+	buyers, bwNeeds := genBuyers(views, 1.0)
+	if m.AutoScale {
+		buyers, bwNeeds = genBuyers(views, float64(bwHas)/float64(bwNeeds))
+	}
 
 	if m.Verbose {
 		fmt.Printf("nodes: %v, views: %v, needs: %v, has: %v\n", len(suppliers), len(buyers), bwNeeds*bwUnit, bwHas*bwUnit)
@@ -187,14 +190,14 @@ func genSuppliers(nodes []*Node) ([]rsdmatch.Supplier, int64) {
 	return suppliers, bwHas
 }
 
-func genBuyers(views []*View) ([]rsdmatch.Buyer, int64) {
+func genBuyers(views []*View, scale float64) ([]rsdmatch.Buyer, int64) {
 	var bwNeeds int64
 
 	buyers := make([]rsdmatch.Buyer, len(views))
 
 	for i, view := range views {
 		buyers[i].ID = view.View
-		buyers[i].Demand = int64(math.Ceil(view.Bandwidth * float64(1000/bwUnit)))
+		buyers[i].Demand = int64(math.Ceil(view.Bandwidth * scale * float64(1000/bwUnit)))
 		buyers[i].Info = view
 		bwNeeds += buyers[i].Demand
 	}

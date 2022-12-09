@@ -43,6 +43,9 @@ type Matcher struct {
 	RejectScore       *float32 `json:"rjs"`
 	RemoteAccessLimit *float32 `json:"ral"`
 
+	// When set, matcher will auto-scale the views's bandwidth to fit nodes's.
+	AutoScale bool `json:"as"`
+
 	Verbose bool `json:"vv"`
 
 	ecn int
