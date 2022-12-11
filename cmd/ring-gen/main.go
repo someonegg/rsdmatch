@@ -105,9 +105,6 @@ var createCmd = &cli.Command{
 		if bw <= 0 {
 			return errors.New("invalid bw")
 		}
-		if !(scale >= 0.0 && scale <= 1.0) {
-			return errors.New("invalid scale")
-		}
 		if !(ras >= 20.0 && ras <= 80.0) {
 			return errors.New("invalid ras")
 		}
