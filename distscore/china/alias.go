@@ -66,7 +66,7 @@ func init() {
 	provinceAlias = make(map[string]string)
 	for p, as := range provinces {
 		for _, a := range as {
-			if _, ok := provinces[a]; ok {
+			if _, ok := provinceAlias[a]; ok {
 				panic("repeated province alias")
 			}
 			provinceAlias[a] = p
