@@ -72,20 +72,10 @@ func (m greedyMatcher) Match(suppliers []Supplier, buyers []Buyer, affinities Af
 
 	sort.SliceStable(al, func(i, j int) bool {
 		r1 := m.sensCompare(al[i].price, al[j].price)
-		if r1 < 0 {
-			return true
-		}
-		if r1 > 0 {
-			return false
-		}
 		r2 := m.ptrCompare(unsafe.Pointer(al[i].buyer), unsafe.Pointer(al[j].buyer))
-		if r2 < 0 {
-			return true
-		}
-		if r2 > 0 {
-			return false
-		}
-		return al[i].price < al[j].price
+		return r1 < 0 ||
+			r1 == 0 && r2 < 0 ||
+			r1 == 0 && r2 == 0 && al[i].price < al[j].price
 	})
 
 	matches = make(Matches, len(buyers))
