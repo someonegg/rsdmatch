@@ -83,6 +83,12 @@ var createCmd = &cli.Command{
 			Usage:    "specify the remote access limit [0.0-1.0]",
 		},
 		&cli.BoolFlag{
+			Name:     "storage",
+			Required: false,
+			Value:    false,
+			Usage:    "allocate storage not bandwidth",
+		},
+		&cli.BoolFlag{
 			Name:     "vv",
 			Required: false,
 			Value:    false,
@@ -91,16 +97,17 @@ var createCmd = &cli.Command{
 	},
 	Action: func(ctx *cli.Context) error {
 		var (
-			bw        = ctx.Float64("bw")
-			scale     = ctx.Float64("scale")
-			nodeFile  = ctx.String("node")
-			viewFile  = ctx.String("view")
-			allocFile = ctx.String("alloc")
-			ecn       = ctx.Int("ecn")
-			ras       = float32(ctx.Float64("ras"))
-			rjs       = float32(ctx.Float64("rjs"))
-			ral       = float32(ctx.Float64("ral"))
-			verbose   = ctx.Bool("vv")
+			bw          = ctx.Float64("bw")
+			scale       = ctx.Float64("scale")
+			nodeFile    = ctx.String("node")
+			viewFile    = ctx.String("view")
+			allocFile   = ctx.String("alloc")
+			ecn         = ctx.Int("ecn")
+			ras         = float32(ctx.Float64("ras"))
+			rjs         = float32(ctx.Float64("rjs"))
+			ral         = float32(ctx.Float64("ral"))
+			storageMode = ctx.Bool("storage")
+			verbose     = ctx.Bool("vv")
 		)
 		if bw <= 0 {
 			return errors.New("invalid bw")
@@ -117,6 +124,6 @@ var createCmd = &cli.Command{
 		return doCreate(
 			ctx.Context, bw, scale,
 			nodeFile, viewFile, allocFile,
-			ecn, ras, rjs, ral, verbose)
+			ecn, ras, rjs, ral, storageMode, verbose)
 	},
 }
