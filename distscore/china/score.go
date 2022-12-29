@@ -19,7 +19,6 @@ const (
 	huaNan
 	xiBei
 	xiNan
-	haiNan
 	xinJiang
 	xiZang
 	taiWan
@@ -32,12 +31,9 @@ var regionNeighbors = map[int][]int{
 	huaZhbei: {huaZhnan, huaBei, huaDong, xiBei},
 	huaZhnan: {huaZhbei, huaDong, huaNan, xiNan},
 	huaDong:  {huaZhbei, huaZhnan, huaNan},
-	huaNan:   {huaZhnan, huaDong, xiNan, haiNan},
-	xiBei:    {huaZhbei, huaBei, xinJiang},
-	xiNan:    {huaZhnan, huaNan, xiZang},
-	haiNan:   {huaNan},
-	xinJiang: {xiBei},
-	xiZang:   {xiNan},
+	huaNan:   {huaZhnan, huaDong, xiNan},
+	xiBei:    {huaZhbei, huaBei},
+	xiNan:    {huaZhnan, huaNan},
 }
 
 var regionMap map[string]int
@@ -49,10 +45,9 @@ func init() {
 		huaZhbei: {"山东", "河南"},
 		huaZhnan: {"湖北", "湖南"},
 		huaDong:  {"江苏", "安徽", "浙江", "江西", "福建", "上海"},
-		huaNan:   {"广东", "广西"},
+		huaNan:   {"广东", "广西", "海南"},
 		xiBei:    {"陕西", "宁夏", "甘肃", "青海"},
 		xiNan:    {"四川", "云南", "贵州", "重庆"},
-		haiNan:   {"海南"},
 		xinJiang: {"新疆"},
 		xiZang:   {"西藏"},
 		taiWan:   {"台湾"},

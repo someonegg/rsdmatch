@@ -115,7 +115,7 @@ var createCmd = &cli.Command{
 		if !(ras >= 20.0 && ras <= 80.0) {
 			return errors.New("invalid ras")
 		}
-		if !(rjs >= 80.0 && rjs <= 100.0) {
+		if !(rjs >= ras && rjs <= 100.0) {
 			return errors.New("invalid rjs")
 		}
 		if !(ral >= 0.0 && ral <= 1.0) {
