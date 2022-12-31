@@ -44,7 +44,8 @@ type Matcher struct {
 	RemoteAccessLimit *float32 `json:"ral"`
 
 	// When set, matcher will auto-scale the views's bandwidth to fit nodes's.
-	AutoScale bool `json:"as"`
+	AutoScale     bool `json:"as"`
+	LocationProxy bool `json:"lp"`
 
 	Verbose bool `json:"vv"`
 

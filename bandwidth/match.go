@@ -48,13 +48,13 @@ func (m *Matcher) Find(supplier *rsdmatch.Supplier, buyer *rsdmatch.Buyer) rsdma
 	node := supplier.Info.(*Node)
 	view := buyer.Info.(*View)
 
-	score := china.ScoreOfDistance(
+	score, local := china.DistScoreOf(
 		china.Location{ISP: node.ISP, Province: node.Province},
 		china.Location{ISP: view.ISP, Province: view.Province},
-	)
+		m.LocationProxy)
 	// local only nodes
 	if node.LocalOnly {
-		if node.ISP == view.ISP && node.Province == view.Province {
+		if local {
 			return rsdmatch.Affinity{
 				Price: 0.0, // highest priority
 				Limit: nil,
@@ -66,7 +66,7 @@ func (m *Matcher) Find(supplier *rsdmatch.Supplier, buyer *rsdmatch.Buyer) rsdma
 			}
 		}
 	}
-	// local
+	// near
 	if score < m.ras {
 		return rsdmatch.Affinity{
 			Price: score,

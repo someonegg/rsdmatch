@@ -8,7 +8,9 @@ import "strings"
 
 var (
 	ispAlias      map[string]string
+	ispProxy      map[string]string
 	provinceAlias map[string]string
+	provinceProxy map[string]string
 )
 
 func init() {
@@ -26,6 +28,8 @@ func init() {
 			ispAlias[a] = p
 		}
 	}
+
+	ispProxy = map[string]string{}
 
 	provinces := map[string][]string{
 		"安徽":  {"安徽省", "anhui", "ah"},
@@ -72,15 +76,30 @@ func init() {
 			provinceAlias[a] = p
 		}
 	}
+
+	provinceProxy = map[string]string{
+		"北京": "河北",
+		"天津": "河北",
+		"上海": "江苏",
+		"重庆": "四川",
+		"宁夏": "甘肃",
+		"海南": "广东",
+	}
 }
 
-func UnifyLocation(l Location) Location {
+func UnifyLocation(l Location, proxy bool) Location {
 	l.ISP = strings.ToLower(l.ISP)
 	if o, ok := ispAlias[l.ISP]; ok {
 		l.ISP = o
 	}
+	if o, ok := ispProxy[l.ISP]; proxy && ok {
+		l.ISP = o
+	}
 	l.Province = strings.ToLower(l.Province)
 	if o, ok := provinceAlias[l.Province]; ok {
+		l.Province = o
+	}
+	if o, ok := provinceProxy[l.Province]; proxy && ok {
 		l.Province = o
 	}
 	return l

@@ -74,7 +74,7 @@ func init() {
 	}
 }
 
-// ScoreOfDistance rules:
+// DistScoreOf rules:
 //
 //	ISP_Province: 10
 //	ISP_Region: 20
@@ -85,31 +85,37 @@ func init() {
 //	ISP: 70
 //	AdjacentRegion: 80
 //	Other: 90
-func ScoreOfDistance(a, b Location) float32 {
-	a, b = UnifyLocation(a), UnifyLocation(b)
+func DistScoreOf(a, b Location, proxy bool) (score float32, local bool) {
+	a, b = UnifyLocation(a, proxy), UnifyLocation(b, proxy)
 	rA, rB := regionMap[a.Province], regionMap[b.Province]
 	sameRegion := rA == rB
 
 	if a.ISP == b.ISP {
 		if a.Province == b.Province {
-			return 10.0
+			score = 10.0
+			local = true
+			return
 		}
 
 		if sameRegion {
-			return 20.0
+			score = 20.0
+			return
 		}
 
 		for _, r := range regionNeighbors[rA] {
 			if rB == r {
-				return 30.0
+				score = 30.0
+				return
 			}
 		}
 
 		if centralMap[a.Province] && centralMap[b.Province] {
-			return 40.0
+			score = 40.0
+			return
 		}
 
-		return 70.0
+		score = 70.0
+		return
 	}
 
 	isNormal := func(r int) bool {
@@ -118,19 +124,23 @@ func ScoreOfDistance(a, b Location) float32 {
 
 	if isNormal(rA) && isNormal(rB) {
 		if a.Province == b.Province {
-			return 50.0
+			score = 50.0
+			return
 		}
 
 		if sameRegion {
-			return 60.0
+			score = 60.0
+			return
 		}
 	}
 
 	for _, r := range regionNeighbors[rA] {
 		if rB == r {
-			return 80.0
+			score = 80.0
+			return
 		}
 	}
 
-	return 90.0
+	score = 90.0
+	return
 }
