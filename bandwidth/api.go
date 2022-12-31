@@ -46,6 +46,7 @@ type Matcher struct {
 	// When set, matcher will auto-scale the views's bandwidth to fit nodes's.
 	AutoScale     bool `json:"as"`
 	LocationProxy bool `json:"lp"`
+	AutoMergeView bool `json:"amv"`
 
 	Verbose bool `json:"vv"`
 

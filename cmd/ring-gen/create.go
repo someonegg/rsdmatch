@@ -61,6 +61,7 @@ func doCreate(ctx context.Context, total, scale float64,
 		RemoteAccessLimit: &ral,
 		AutoScale:         autoScale,
 		LocationProxy:     true,
+		AutoMergeView:     true,
 		Verbose:           verbose,
 	}
 

@@ -15,7 +15,7 @@ import (
 
 const (
 	scoreSensitivity = 10.0
-	bwUnit           = 100 // Mbps
+	bwUnit           = 50 // Mbps
 )
 
 func (m *Matcher) init() {
@@ -96,12 +96,18 @@ func (p nodePercentLimit) Calculate(supplierCap, buyerDemand int64) int64 {
 func (m *Matcher) Match(nodes []*Node, views []*View) (allocs []*Alloc, perfect bool, summary Summary) {
 	m.init()
 
-	var summ Summary
+	var (
+		summ       Summary
+		buyerViews map[string][]string
+	)
 
 	suppliers, bwHas := genSuppliers(nodes)
 	buyers, bwNeeds := genBuyers(views, 1.0)
 	if m.AutoScale {
 		buyers, bwNeeds = genBuyers(views, float64(bwHas)/float64(bwNeeds))
+	}
+	if m.AutoMergeView {
+		buyers, buyerViews = mergeBuyers(buyers, m.LocationProxy)
 	}
 
 	if m.Verbose {
@@ -164,7 +170,7 @@ func (m *Matcher) Match(nodes []*Node, views []*View) (allocs []*Alloc, perfect 
 		summ.BandwidthRemains = float64(rests) / float64(1000/bwUnit)
 	}
 
-	return genAllocs(matches), perfect, summ
+	return genAllocs(matches, buyerViews), perfect, summ
 }
 
 func genSuppliers(nodes []*Node) ([]rsdmatch.Supplier, int64) {
@@ -209,10 +215,38 @@ func genBuyers(views []*View, scale float64) ([]rsdmatch.Buyer, int64) {
 	return buyers, bwNeeds
 }
 
-func genAllocs(matches rsdmatch.Matches) []*Alloc {
+func mergeBuyers(raws []rsdmatch.Buyer, locationProxy bool) (merged []rsdmatch.Buyer, buyerViews map[string][]string) {
+	merged = make([]rsdmatch.Buyer, len(raws))
+	buyerViews = make(map[string][]string, len(raws))
+
+	indexes := make(map[string]int)
+	next := 0
+	for _, buyer := range raws {
+		view := buyer.Info.(*View)
+		location := china.UnifyLocation(china.Location{ISP: view.ISP, Province: view.Province}, locationProxy)
+		buyerID := location.Province + "-" + location.ISP
+		if idx, ok := indexes[buyerID]; ok {
+			merged[idx].Demand += buyer.Demand
+			buyerViews[buyerID] = append(buyerViews[buyerID], buyer.ID)
+		} else {
+			merged[next].ID = buyerID
+			merged[next].Demand = buyer.Demand
+			merged[next].Info = view
+			buyerViews[buyerID] = []string{buyer.ID}
+			indexes[buyerID] = next
+			next++
+		}
+
+	}
+
+	merged = merged[0:next]
+	return
+}
+
+func genAllocs(matches rsdmatch.Matches, buyerViews map[string][]string) []*Alloc {
 	var allocs []*Alloc
 
-	for buyerID, records := range matches {
+	makeGroup := func(records []rsdmatch.BuyRecord) Group {
 		group := Group{
 			Nodes:       make([]string, len(records)),
 			NodesWeight: make([]int64, len(records)),
@@ -221,10 +255,24 @@ func genAllocs(matches rsdmatch.Matches) []*Alloc {
 			group.Nodes[i] = record.SupplierID
 			group.NodesWeight[i] = record.Amount * bwUnit
 		}
-		allocs = append(allocs, &Alloc{
-			Name:   buyerID,
-			Groups: []Group{group},
-		})
+		return group
+	}
+
+	for buyerID, records := range matches {
+		views := buyerViews[buyerID]
+		if len(views) == 0 {
+			allocs = append(allocs, &Alloc{
+				Name:   buyerID,
+				Groups: []Group{makeGroup(records)},
+			})
+			continue
+		}
+		for _, view := range views {
+			allocs = append(allocs, &Alloc{
+				Name:   view,
+				Groups: []Group{makeGroup(records)},
+			})
+		}
 	}
 
 	sort.Slice(allocs, func(i, j int) bool {
