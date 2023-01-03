@@ -240,6 +240,9 @@ func mergeBuyers(raws []rsdmatch.Buyer, locationProxy bool) (merged []rsdmatch.B
 	}
 
 	merged = merged[0:next]
+	sort.Slice(merged, func(i, j int) bool {
+		return merged[i].Demand > merged[j].Demand
+	})
 	return
 }
 
