@@ -44,9 +44,13 @@ type Matcher struct {
 	RemoteAccessLimit *float32 `json:"ral"`
 
 	// When set, matcher will auto-scale the views's bandwidth to fit nodes's.
-	AutoScale     bool `json:"as"`
-	LocationProxy bool `json:"lp"`
+	AutoScale bool `json:"as"`
+
+	// Merge views with the same location.
 	AutoMergeView bool `json:"amv"`
+
+	// https://pkg.go.dev/github.com/someonegg/rsdmatch/distscore/china#UnifyLocation
+	LocationProxy bool `json:"lp"`
 
 	Verbose bool `json:"vv"`
 
