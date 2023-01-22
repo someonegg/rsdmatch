@@ -67,4 +67,7 @@ type Summary struct {
 	ViewsBandwidth   float64 `json:"views_bw"`
 	BandwidthNeeds   float64 `json:"bw_needs"`
 	BandwidthRemains float64 `json:"bw_remains"`
+
+	// when AutoScale
+	Scales map[string]float64 `json:"scales"`
 }

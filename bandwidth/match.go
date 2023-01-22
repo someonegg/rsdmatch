@@ -98,20 +98,19 @@ func (m *Matcher) Match(nodes []*Node, views []*View) (allocs []*Alloc, perfect 
 
 	var (
 		summ       Summary
-		ispScale   map[string]float64
 		buyerViews map[string][]string
 	)
 
 	suppliers, ispHasBW := genSuppliers(nodes)
-	buyers, ispNeedsBW := genBuyers(views, ispScale)
+	buyers, ispNeedsBW := genBuyers(views, summ.Scales)
 	if m.AutoScale {
-		ispScale = make(map[string]float64)
+		summ.Scales = make(map[string]float64)
 		for isp, has := range ispHasBW {
 			if needs := ispNeedsBW[isp]; has > 0 && needs > 0 {
-				ispScale[isp] = float64(has) / float64(needs)
+				summ.Scales[isp] = float64(has) / float64(needs)
 			}
 		}
-		buyers, ispNeedsBW = genBuyers(views, ispScale)
+		buyers, ispNeedsBW = genBuyers(views, summ.Scales)
 	}
 	if m.AutoMergeView {
 		buyers, buyerViews = mergeBuyers(buyers, m.LocationProxy)
@@ -129,7 +128,6 @@ func (m *Matcher) Match(nodes []*Node, views []*View) (allocs []*Alloc, perfect 
 	}
 	if m.Verbose {
 		fmt.Printf("nodes: %v, views: %v, needs: %v, has: %v\n", len(suppliers), len(buyers), bwNeeds*bwUnit, bwHas*bwUnit)
-		fmt.Println(ispScale)
 		fmt.Println("")
 	}
 	summ.NodesCount = len(suppliers)
