@@ -98,20 +98,38 @@ func (m *Matcher) Match(nodes []*Node, views []*View) (allocs []*Alloc, perfect 
 
 	var (
 		summ       Summary
+		ispScale   map[string]float64
 		buyerViews map[string][]string
 	)
 
-	suppliers, bwHas := genSuppliers(nodes)
-	buyers, bwNeeds := genBuyers(views, 1.0)
+	suppliers, ispHasBW := genSuppliers(nodes)
+	buyers, ispNeedsBW := genBuyers(views, ispScale)
 	if m.AutoScale {
-		buyers, bwNeeds = genBuyers(views, float64(bwHas)/float64(bwNeeds))
+		ispScale = make(map[string]float64)
+		for isp, has := range ispHasBW {
+			if needs := ispNeedsBW[isp]; has > 0 && needs > 0 {
+				ispScale[isp] = float64(has) / float64(needs)
+			}
+		}
+		buyers, ispNeedsBW = genBuyers(views, ispScale)
 	}
 	if m.AutoMergeView {
 		buyers, buyerViews = mergeBuyers(buyers, m.LocationProxy)
 	}
 
+	var (
+		bwHas   int64
+		bwNeeds int64
+	)
+	for _, has := range ispHasBW {
+		bwHas += has
+	}
+	for _, needs := range ispNeedsBW {
+		bwNeeds += needs
+	}
 	if m.Verbose {
 		fmt.Printf("nodes: %v, views: %v, needs: %v, has: %v\n", len(suppliers), len(buyers), bwNeeds*bwUnit, bwHas*bwUnit)
+		fmt.Println(ispScale)
 		fmt.Println("")
 	}
 	summ.NodesCount = len(suppliers)
@@ -173,8 +191,8 @@ func (m *Matcher) Match(nodes []*Node, views []*View) (allocs []*Alloc, perfect 
 	return genAllocs(matches, buyerViews), perfect, summ
 }
 
-func genSuppliers(nodes []*Node) ([]rsdmatch.Supplier, int64) {
-	var bwHas int64
+func genSuppliers(nodes []*Node) ([]rsdmatch.Supplier, map[string]int64) {
+	ispBW := make(map[string]int64)
 
 	suppliers := make([]rsdmatch.Supplier, len(nodes))
 
@@ -186,33 +204,37 @@ func genSuppliers(nodes []*Node) ([]rsdmatch.Supplier, int64) {
 			suppliers[i].Cap = 0
 			fmt.Println("node", node.Node, "is incomplete")
 		}
-		bwHas += suppliers[i].Cap
+		ispBW[node.ISP] += suppliers[i].Cap
 	}
 
 	sort.Slice(suppliers, func(i, j int) bool {
 		return suppliers[i].ID < suppliers[j].ID
 	})
 
-	return suppliers, bwHas
+	return suppliers, ispBW
 }
 
-func genBuyers(views []*View, scale float64) ([]rsdmatch.Buyer, int64) {
-	var bwNeeds int64
+func genBuyers(views []*View, ispScale map[string]float64) ([]rsdmatch.Buyer, map[string]int64) {
+	ispBW := make(map[string]int64)
 
 	buyers := make([]rsdmatch.Buyer, len(views))
 
 	for i, view := range views {
 		buyers[i].ID = view.View
+		scale := 1.0
+		if s, ok := ispScale[view.ISP]; ok {
+			scale = s
+		}
 		buyers[i].Demand = int64(math.Ceil(view.Bandwidth * scale * float64(1000/bwUnit)))
 		buyers[i].Info = view
-		bwNeeds += buyers[i].Demand
+		ispBW[view.ISP] += buyers[i].Demand
 	}
 
 	sort.Slice(buyers, func(i, j int) bool {
 		return buyers[i].Demand > buyers[j].Demand
 	})
 
-	return buyers, bwNeeds
+	return buyers, ispBW
 }
 
 func mergeBuyers(raws []rsdmatch.Buyer, locationProxy bool) (merged []rsdmatch.Buyer, buyerViews map[string][]string) {
