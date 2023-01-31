@@ -66,7 +66,7 @@ func init() {
 		"澳门":  {"澳门特别行政区", "macao", "mo", "aomen"},
 		"香港":  {"香港特别行政区", "hongkong", "hk", "xianggang"},
 		"台湾":  {"台湾省", "taiwan", "tw"},
-		"中国":  {"中华人民共和国", "cn"},
+		"中国":  {"中华人民共和国", "zhongguo", "默认", "default", "cn"},
 	}
 	provinceAlias = make(map[string]string)
 	for p, as := range provinces {
