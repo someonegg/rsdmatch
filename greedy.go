@@ -47,13 +47,6 @@ func (m greedyMatcher) ptrCompare(a, b unsafe.Pointer) int {
 func (m greedyMatcher) Match(suppliers []Supplier, buyers []Buyer, affinities AffinityTable) (matches Matches, perfect bool) {
 	al := make([]greedyAffinity, len(suppliers)*len(buyers))
 
-	for i := 0; i < len(suppliers); i++ {
-		suppliers[i].CapRest = suppliers[i].Cap
-	}
-	for i := 0; i < len(buyers); i++ {
-		buyers[i].DemandRest = buyers[i].Demand
-	}
-
 	for n, i := 0, 0; i < len(suppliers); i++ {
 		for j := 0; j < len(buyers); j++ {
 			a := affinities.Find(&suppliers[i], &buyers[j])

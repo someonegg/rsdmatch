@@ -53,10 +53,10 @@ var createCmd = &cli.Command{
 			Usage:    "specify the intput view.json",
 		},
 		&cli.StringFlag{
-			Name:     "alloc",
+			Name:     "ring",
 			Required: false,
-			Value:    "alloc.json",
-			Usage:    "specify the output alloc.json",
+			Value:    "ring.json",
+			Usage:    "specify the output ring.json",
 		},
 		&cli.IntFlag{
 			Name:     "ecn",
@@ -101,7 +101,7 @@ var createCmd = &cli.Command{
 			scale       = ctx.Float64("scale")
 			nodeFile    = ctx.String("node")
 			viewFile    = ctx.String("view")
-			allocFile   = ctx.String("alloc")
+			ringFile    = ctx.String("ring")
 			ecn         = ctx.Int("ecn")
 			ras         = float32(ctx.Float64("ras"))
 			rjs         = float32(ctx.Float64("rjs"))
@@ -123,7 +123,7 @@ var createCmd = &cli.Command{
 		}
 		return doCreate(
 			ctx.Context, bw, scale,
-			nodeFile, viewFile, allocFile,
+			nodeFile, viewFile, ringFile,
 			ecn, ras, rjs, ral, storageMode, verbose)
 	},
 }

@@ -7,7 +7,7 @@
 package rsdmatch
 
 type Matcher interface {
-	// Match will set suppliers.CapRest and buyers.DemandRest.
+	// Match will reduce suppliers.CapRest and buyers.DemandRest.
 	Match(suppliers []Supplier, buyers []Buyer, affinities AffinityTable) (matches Matches, perfect bool)
 }
 

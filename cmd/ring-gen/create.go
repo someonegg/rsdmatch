@@ -29,12 +29,12 @@ type View struct {
 	Percent float64 `json:"percent"`
 }
 
-type Allocs struct {
-	Views []*bw.Alloc `json:"views"`
+type Rings struct {
+	Views []*bw.Ring `json:"views"`
 }
 
 func doCreate(ctx context.Context, total, scale float64,
-	nodeFile, viewFile, allocFile string,
+	nodeFile, viewFile, ringFile string,
 	ecn int, ras, rjs float32, ral float32,
 	storageMode, verbose bool) error {
 
@@ -55,25 +55,30 @@ func doCreate(ctx context.Context, total, scale float64,
 	}
 
 	matcher := &bw.Matcher{
-		EnoughNodeCount:   &ecn,
-		RemoteAccessScore: &ras,
-		RejectScore:       &rjs,
-		RemoteAccessLimit: &ral,
-		AutoScale:         autoScale,
-		AutoMergeView:     true,
-		LocationProxy:     true,
-		Verbose:           verbose,
+		AutoScale:     autoScale,
+		AutoMergeView: true,
+		LocationProxy: true,
+		Verbose:       verbose,
 	}
 
-	allocs, perfect, summ := matcher.Match(nodes, views)
-	if perfect {
-		fmt.Println("perfect match")
+	nodeSet := bw.NodeSet{Elems: nodes}
+	viewSet := bw.ViewSet{
+		Elems: views,
+		Option: &bw.ViewOption{
+			EnoughNodeCount:   ecn,
+			RemoteAccessScore: ras,
+			RejectScore:       rjs,
+			RemoteAccessLimit: ral,
+			SkipLocalOnly:     false,
+		},
 	}
+
+	ringss, summ := matcher.Match(nodeSet, []bw.ViewSet{viewSet})
 	fmt.Printf("%+v\n", summ)
 
-	err = writeAllocs(allocFile, allocs)
+	err = writeRings(ringFile, ringss[0].Elems)
 	if err != nil {
-		return fmt.Errorf("write alloc file failed: %w", err)
+		return fmt.Errorf("write ring file failed: %w", err)
 	}
 
 	return nil
@@ -165,10 +170,10 @@ func loadViews(file string, total, scale float64) ([]*bw.View, error) {
 	return bwvs, nil
 }
 
-func writeAllocs(file string, allocs []*bw.Alloc) error {
+func writeRings(file string, rings []*bw.Ring) error {
 	// MBps, special!!!
-	for _, alloc := range allocs {
-		for _, group := range alloc.Groups {
+	for _, ring := range rings {
+		for _, group := range ring.Groups {
 			for i := 0; i < len(group.NodesWeight); i++ {
 				group.NodesWeight[i] /= 8
 			}
@@ -179,7 +184,7 @@ func writeAllocs(file string, allocs []*bw.Alloc) error {
 
 	encoder := json.NewEncoder(&buf)
 	encoder.SetIndent("", "   ")
-	if err := encoder.Encode(Allocs{allocs}); err != nil {
+	if err := encoder.Encode(Rings{rings}); err != nil {
 		return err
 	}
 

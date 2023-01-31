@@ -13,6 +13,10 @@ type Node struct {
 	LocalOnly bool    `json:"local_only"`
 }
 
+type NodeSet struct {
+	Elems []*Node `json:"elems"`
+}
+
 type View struct {
 	View      string  `json:"view"`
 	ISP       string  `json:"isp"`
@@ -20,7 +24,28 @@ type View struct {
 	Bandwidth float64 `json:"bw"` // Gbps
 }
 
-type Alloc struct {
+type ViewOption struct {
+	EnoughNodeCount   int     `json:"ecn"`
+	RemoteAccessScore float32 `json:"ras"`
+	RejectScore       float32 `json:"rjs"`
+	RemoteAccessLimit float32 `json:"ral"`
+	SkipLocalOnly     bool    `json:"nolo"`
+}
+
+var DefaultViewOption = &ViewOption{
+	EnoughNodeCount:   5,
+	RemoteAccessScore: 50.0,
+	RejectScore:       80.0,
+	RemoteAccessLimit: 0.1,
+	SkipLocalOnly:     false,
+}
+
+type ViewSet struct {
+	Elems  []*View     `json:"elems"`
+	Option *ViewOption `json:"option"`
+}
+
+type Ring struct {
 	Name   string  `json:"name"`
 	Groups []Group `json:"groups"`
 }
@@ -30,34 +55,20 @@ type Group struct {
 	NodesWeight []int64  `json:"nodesWeight"` // Mbps
 }
 
-const (
-	DefaultEnoughNodeCount   = 5
-	DefaultRemoteAccessScore = 50.0
-	DefaultRejectScore       = 80.0
-	DefaultRemoteAccessLimit = 0.1
-)
+type RingSet struct {
+	Elems []*Ring `json:"elems"`
+}
 
 type Matcher struct {
-	EnoughNodeCount   *int     `json:"ecn"`
-	RemoteAccessScore *float32 `json:"ras"`
-	RejectScore       *float32 `json:"rjs"`
-	RemoteAccessLimit *float32 `json:"ral"`
-
 	// When set, matcher will auto-scale the views's bandwidth to fit nodes's.
 	AutoScale bool `json:"as"`
 
 	// Merge views with the same location.
 	AutoMergeView bool `json:"amv"`
-
 	// https://pkg.go.dev/github.com/someonegg/rsdmatch/distscore/china#UnifyLocation
 	LocationProxy bool `json:"lp"`
 
 	Verbose bool `json:"vv"`
-
-	ecn int
-	ras float32
-	rjs float32
-	ral float32
 }
 
 type Summary struct {

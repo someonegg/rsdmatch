@@ -18,66 +18,58 @@ const (
 	bwUnit           = 50 // Mbps
 )
 
-func (m *Matcher) init() {
-	if m.EnoughNodeCount == nil {
-		m.ecn = DefaultEnoughNodeCount
-	} else {
-		m.ecn = *m.EnoughNodeCount
-	}
+type affinityTable struct {
+	ras  float32
+	rjs  float32
+	ral  float32
+	nolo bool
+	lp   bool
+}
 
-	if m.RemoteAccessScore == nil {
-		m.ras = DefaultRemoteAccessScore
-	} else {
-		m.ras = *m.RemoteAccessScore
-	}
-
-	if m.RejectScore == nil {
-		m.rjs = DefaultRejectScore
-	} else {
-		m.rjs = *m.RejectScore
-	}
-
-	if m.RemoteAccessLimit == nil {
-		m.ral = DefaultRemoteAccessLimit
-	} else {
-		m.ral = *m.RemoteAccessLimit
+func newAffinityTable(o *ViewOption, locationProxy bool) rsdmatch.AffinityTable {
+	return &affinityTable{
+		ras:  o.RemoteAccessScore,
+		rjs:  o.RejectScore,
+		ral:  o.RemoteAccessLimit,
+		nolo: o.SkipLocalOnly,
+		lp:   locationProxy,
 	}
 }
 
-func (m *Matcher) Find(supplier *rsdmatch.Supplier, buyer *rsdmatch.Buyer) rsdmatch.Affinity {
+func (t *affinityTable) Find(supplier *rsdmatch.Supplier, buyer *rsdmatch.Buyer) rsdmatch.Affinity {
 	node := supplier.Info.(*Node)
 	view := buyer.Info.(*View)
 
 	score, local := china.DistScoreOf(
 		china.Location{ISP: node.ISP, Province: node.Province},
 		china.Location{ISP: view.ISP, Province: view.Province},
-		m.LocationProxy)
+		t.lp)
 	// local only nodes
 	if node.LocalOnly {
-		if local {
-			return rsdmatch.Affinity{
-				Price: 0.0, // highest priority
-				Limit: nil,
-			}
-		} else {
+		if !local || t.nolo {
 			return rsdmatch.Affinity{
 				Price: score,
 				Limit: nodePercentLimit(0.0),
 			}
+		} else {
+			return rsdmatch.Affinity{
+				Price: 0.0, // highest priority
+				Limit: nil,
+			}
 		}
 	}
 	// near
-	if score < m.ras {
+	if score < t.ras {
 		return rsdmatch.Affinity{
 			Price: score,
 			Limit: nil,
 		}
 	}
 	// remote
-	if score < m.rjs {
+	if score < t.rjs {
 		return rsdmatch.Affinity{
 			Price: score,
-			Limit: nodePercentLimit(m.ral),
+			Limit: nodePercentLimit(t.ral),
 		}
 	}
 	// reject
@@ -93,16 +85,9 @@ func (p nodePercentLimit) Calculate(supplierCap, buyerDemand int64) int64 {
 	return int64(math.Ceil(float64(supplierCap) * float64(p)))
 }
 
-func (m *Matcher) Match(nodes []*Node, views []*View) (allocs []*Alloc, perfect bool, summary Summary) {
-	m.init()
-
-	var (
-		summ       Summary
-		buyerViews map[string][]string
-	)
-
-	suppliers, ispHasBW := genSuppliers(nodes)
-	buyers, ispNeedsBW := genBuyers(views, summ.Scales)
+func (m *Matcher) Match(nodes NodeSet, viewss []ViewSet) (ringss []RingSet, summ Summary) {
+	suppliers, supplierCount, ispHasBW := genSuppliers(nodes)
+	buyerss, buyerCount, ispNeedsBW := genBuyerss(viewss, summ.Scales)
 	if m.AutoScale {
 		summ.Scales = make(map[string]float64)
 		for isp, has := range ispHasBW {
@@ -110,10 +95,7 @@ func (m *Matcher) Match(nodes []*Node, views []*View) (allocs []*Alloc, perfect 
 				summ.Scales[isp] = float64(has) / float64(needs)
 			}
 		}
-		buyers, ispNeedsBW = genBuyers(views, summ.Scales)
-	}
-	if m.AutoMergeView {
-		buyers, buyerViews = mergeBuyers(buyers, m.LocationProxy)
+		buyerss, buyerCount, ispNeedsBW = genBuyerss(viewss, summ.Scales)
 	}
 
 	var (
@@ -126,54 +108,74 @@ func (m *Matcher) Match(nodes []*Node, views []*View) (allocs []*Alloc, perfect 
 	for _, needs := range ispNeedsBW {
 		bwNeeds += needs
 	}
-	if m.Verbose {
-		fmt.Printf("nodes: %v, views: %v, needs: %v, has: %v\n", len(suppliers), len(buyers), bwNeeds*bwUnit, bwHas*bwUnit)
-		fmt.Println("")
-	}
-	summ.NodesCount = len(suppliers)
-	summ.ViewsCount = len(buyers)
+	summ.NodesCount = supplierCount
+	summ.ViewsCount = buyerCount
 	summ.NodesBandwidth = float64(bwHas) / float64(1000/bwUnit)
 	summ.ViewsBandwidth = float64(bwNeeds) / float64(1000/bwUnit)
-
-	matches, perfect := rsdmatch.GreedyMatcher(scoreSensitivity, m.ecn,
-		m.Verbose).Match(suppliers, buyers, m)
 	if m.Verbose {
-		fmt.Println()
+		fmt.Printf("nodes: %v, views: %v, needs: %v, has: %v\n", supplierCount, buyerCount, bwNeeds*bwUnit, bwHas*bwUnit)
+		fmt.Println("")
 	}
 
-	{
-		sort.Slice(buyers, func(i, j int) bool {
-			return buyers[i].DemandRest > buyers[j].DemandRest
-		})
-		rests := int64(0)
-		for _, buyer := range buyers {
-			if rest := buyer.DemandRest; rest > 0 {
-				rests += rest
-				if m.Verbose {
-					fmt.Println(buyer.ID, "demand:", buyer.Demand*bwUnit, "demand_rest:", rest*bwUnit)
+	for i := 0; i < len(suppliers.Elems); i++ {
+		suppliers.Elems[i].CapRest = suppliers.Elems[i].Cap
+	}
+
+	for _, buyers := range buyerss {
+		var buyerViews map[string][]string
+		if m.AutoMergeView {
+			buyers.Elems, buyerViews = mergeBuyers(buyers.Elems, m.LocationProxy)
+		}
+
+		for i := 0; i < len(buyers.Elems); i++ {
+			buyers.Elems[i].DemandRest = buyers.Elems[i].Demand
+		}
+
+		matches, _ := rsdmatch.GreedyMatcher(scoreSensitivity,
+			buyers.Option.EnoughNodeCount, m.Verbose).Match(
+			suppliers.Elems, buyers.Elems, newAffinityTable(buyers.Option, m.LocationProxy))
+		if m.Verbose {
+			fmt.Println()
+		}
+
+		{
+			elems := buyers.Elems
+			sort.Slice(elems, func(i, j int) bool {
+				return elems[i].DemandRest > elems[j].DemandRest
+			})
+			rests := int64(0)
+			for _, elem := range elems {
+				if rest := elem.DemandRest; rest > 0 {
+					rests += rest
+					if m.Verbose {
+						fmt.Println(elem.ID, "demand:", elem.Demand*bwUnit, "demand_rest:", rest*bwUnit)
+					}
+				} else {
+					break
 				}
-			} else {
-				break
 			}
+			if m.Verbose && rests > 0 {
+				fmt.Println("total needs", rests*bwUnit)
+				fmt.Println("")
+			}
+			summ.BandwidthNeeds += float64(rests) / float64(1000/bwUnit)
 		}
-		if m.Verbose && rests > 0 {
-			fmt.Println("total needs", rests*bwUnit)
-			fmt.Println("")
-		}
-		summ.BandwidthNeeds = float64(rests) / float64(1000/bwUnit)
+
+		ringss = append(ringss, genRings(matches, buyerViews))
 	}
 
 	{
-		sort.Slice(suppliers, func(i, j int) bool {
-			return suppliers[i].CapRest > suppliers[j].CapRest
+		elems := suppliers.Elems
+		sort.Slice(elems, func(i, j int) bool {
+			return elems[i].CapRest > elems[j].CapRest
 		})
 		rests := int64(0)
-		for _, supplier := range suppliers {
-			if rest := supplier.CapRest; rest > 0 {
+		for _, elem := range elems {
+			if rest := elem.CapRest; rest > 0 {
 				rests += rest
-				node := supplier.Info.(*Node)
+				node := elem.Info.(*Node)
 				if m.Verbose {
-					fmt.Println(node.ISP, node.Province, supplier.ID, "cap:", supplier.Cap*bwUnit, "cap_rest:", rest*bwUnit)
+					fmt.Println(node.ISP, node.Province, elem.ID, "cap:", elem.Cap*bwUnit, "cap_rest:", rest*bwUnit)
 				}
 			} else {
 				break
@@ -186,15 +188,19 @@ func (m *Matcher) Match(nodes []*Node, views []*View) (allocs []*Alloc, perfect 
 		summ.BandwidthRemains = float64(rests) / float64(1000/bwUnit)
 	}
 
-	return genAllocs(matches, buyerViews), perfect, summ
+	return
 }
 
-func genSuppliers(nodes []*Node) ([]rsdmatch.Supplier, map[string]int64) {
+type supplierSet struct {
+	Elems []rsdmatch.Supplier
+}
+
+func genSuppliers(nodes NodeSet) (supplierSet, int, map[string]int64) {
 	ispBW := make(map[string]int64)
 
-	suppliers := make([]rsdmatch.Supplier, len(nodes))
+	suppliers := make([]rsdmatch.Supplier, len(nodes.Elems))
 
-	for i, node := range nodes {
+	for i, node := range nodes.Elems {
 		suppliers[i].ID = node.Node
 		suppliers[i].Cap = int64(math.Floor(node.Bandwidth * float64(1000/bwUnit)))
 		suppliers[i].Info = node
@@ -209,30 +215,48 @@ func genSuppliers(nodes []*Node) ([]rsdmatch.Supplier, map[string]int64) {
 		return suppliers[i].ID < suppliers[j].ID
 	})
 
-	return suppliers, ispBW
+	return supplierSet{suppliers}, len(suppliers), ispBW
 }
 
-func genBuyers(views []*View, ispScale map[string]float64) ([]rsdmatch.Buyer, map[string]int64) {
+type buyerSet struct {
+	Elems  []rsdmatch.Buyer
+	Option *ViewOption
+}
+
+func genBuyerss(viewss []ViewSet, ispScale map[string]float64) ([]buyerSet, int, map[string]int64) {
+	count := 0
 	ispBW := make(map[string]int64)
 
-	buyers := make([]rsdmatch.Buyer, len(views))
+	var buyerss []buyerSet
 
-	for i, view := range views {
-		buyers[i].ID = view.View
-		scale := 1.0
-		if s, ok := ispScale[view.ISP]; ok {
-			scale = s
+	for _, views := range viewss {
+		buyers := make([]rsdmatch.Buyer, len(views.Elems))
+
+		for i, view := range views.Elems {
+			buyers[i].ID = view.View
+			scale := 1.0
+			if s, ok := ispScale[view.ISP]; ok {
+				scale = s
+			}
+			buyers[i].Demand = int64(math.Ceil(view.Bandwidth * scale * float64(1000/bwUnit)))
+			buyers[i].Info = view
+			ispBW[view.ISP] += buyers[i].Demand
 		}
-		buyers[i].Demand = int64(math.Ceil(view.Bandwidth * scale * float64(1000/bwUnit)))
-		buyers[i].Info = view
-		ispBW[view.ISP] += buyers[i].Demand
+
+		sort.Slice(buyers, func(i, j int) bool {
+			return buyers[i].Demand > buyers[j].Demand
+		})
+
+		option := views.Option
+		if option == nil {
+			option = DefaultViewOption
+		}
+
+		buyerss = append(buyerss, buyerSet{buyers, option})
+		count += len(buyers)
 	}
 
-	sort.Slice(buyers, func(i, j int) bool {
-		return buyers[i].Demand > buyers[j].Demand
-	})
-
-	return buyers, ispBW
+	return buyerss, count, ispBW
 }
 
 func mergeBuyers(raws []rsdmatch.Buyer, locationProxy bool) (merged []rsdmatch.Buyer, buyerViews map[string][]string) {
@@ -266,8 +290,8 @@ func mergeBuyers(raws []rsdmatch.Buyer, locationProxy bool) (merged []rsdmatch.B
 	return
 }
 
-func genAllocs(matches rsdmatch.Matches, buyerViews map[string][]string) []*Alloc {
-	var allocs []*Alloc
+func genRings(matches rsdmatch.Matches, buyerViews map[string][]string) RingSet {
+	var rings []*Ring
 
 	makeGroup := func(records []rsdmatch.BuyRecord) Group {
 		group := Group{
@@ -284,23 +308,23 @@ func genAllocs(matches rsdmatch.Matches, buyerViews map[string][]string) []*Allo
 	for buyerID, records := range matches {
 		views := buyerViews[buyerID]
 		if len(views) == 0 {
-			allocs = append(allocs, &Alloc{
+			rings = append(rings, &Ring{
 				Name:   buyerID,
 				Groups: []Group{makeGroup(records)},
 			})
 			continue
 		}
 		for _, view := range views {
-			allocs = append(allocs, &Alloc{
+			rings = append(rings, &Ring{
 				Name:   view,
 				Groups: []Group{makeGroup(records)},
 			})
 		}
 	}
 
-	sort.Slice(allocs, func(i, j int) bool {
-		return allocs[i].Name < allocs[j].Name
+	sort.Slice(rings, func(i, j int) bool {
+		return rings[i].Name < rings[j].Name
 	})
 
-	return allocs
+	return RingSet{rings}
 }
