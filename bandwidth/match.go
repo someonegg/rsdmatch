@@ -112,18 +112,10 @@ func (m *Matcher) Match(nodes NodeSet, viewss []ViewSet) (ringss []RingSet, summ
 		fmt.Println("")
 	}
 
-	for i := 0; i < len(suppliers.Elems); i++ {
-		suppliers.Elems[i].CapRest = suppliers.Elems[i].Cap
-	}
-
 	for _, buyers := range buyerss {
 		var buyerViews map[string][]string
 		if m.AutoMergeView {
 			buyers.Elems, buyerViews = mergeBuyers(buyers.Elems, m.LocationProxy)
-		}
-
-		for i := 0; i < len(buyers.Elems); i++ {
-			buyers.Elems[i].DemandRest = buyers.Elems[i].Demand
 		}
 
 		matches, _ := rsdmatch.GreedyMatcher(scoreSensitivity,
@@ -198,11 +190,12 @@ func genSuppliers(nodes NodeSet) (supplierSet, int, map[string]int64) {
 	for i, node := range nodes.Elems {
 		suppliers[i].ID = node.Node
 		suppliers[i].Cap = int64(math.Floor(node.Bandwidth * float64(1000/bwUnit)))
-		suppliers[i].Info = node
 		if node.ISP == "" || node.Province == "" {
 			suppliers[i].Cap = 0
 			fmt.Println("node", node.Node, "is incomplete")
 		}
+		suppliers[i].CapRest = suppliers[i].Cap
+		suppliers[i].Info = node
 		ispBW[node.ISP] += suppliers[i].Cap
 	}
 
@@ -234,6 +227,7 @@ func genBuyerss(viewss []ViewSet, ispScale map[string]float64) ([]buyerSet, int,
 				scale = s
 			}
 			buyers[i].Demand = int64(math.Ceil(view.Bandwidth * scale * float64(1000/bwUnit)))
+			buyers[i].DemandRest = buyers[i].Demand
 			buyers[i].Info = view
 			ispBW[view.ISP] += buyers[i].Demand
 		}
@@ -266,14 +260,17 @@ func mergeBuyers(raws []rsdmatch.Buyer, locationProxy bool) (merged []rsdmatch.B
 		buyerID := location.Province + "-" + location.ISP
 		if idx, ok := indexes[buyerID]; ok {
 			merged[idx].Demand += buyer.Demand
+			merged[idx].DemandRest = merged[idx].Demand
 			buyerViews[buyerID] = append(buyerViews[buyerID], buyer.ID)
 		} else {
-			merged[next].ID = buyerID
-			merged[next].Demand = buyer.Demand
-			merged[next].Info = view
-			buyerViews[buyerID] = []string{buyer.ID}
-			indexes[buyerID] = next
+			idx = next
 			next++
+			merged[idx].ID = buyerID
+			merged[idx].Demand = buyer.Demand
+			merged[idx].DemandRest = merged[idx].Demand
+			merged[idx].Info = view
+			buyerViews[buyerID] = []string{buyer.ID}
+			indexes[buyerID] = idx
 		}
 
 	}
