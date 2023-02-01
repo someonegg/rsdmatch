@@ -51,11 +51,6 @@ func (t *affinityTable) Find(supplier *rsdmatch.Supplier, buyer *rsdmatch.Buyer)
 				Price: score,
 				Limit: nodePercentLimit(0.0),
 			}
-		} else {
-			return rsdmatch.Affinity{
-				Price: 0.0, // highest priority
-				Limit: nil,
-			}
 		}
 	}
 	// near
