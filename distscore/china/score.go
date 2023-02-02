@@ -67,7 +67,7 @@ func init() {
 var centralMap map[string]bool
 
 func init() {
-	provinces := []string{"辽宁", "北京", "天津", "河北", "山西", "山东", "河南", "湖北", "湖南",
+	provinces := []string{"辽宁", "北京", "天津", "河北", "山西", "陕西", "山东", "河南", "湖北", "湖南",
 		"江苏", "安徽", "浙江", "江西", "福建", "上海", "广东", "广西", "四川", "贵州", "重庆", "中国"}
 
 	centralMap = make(map[string]bool)

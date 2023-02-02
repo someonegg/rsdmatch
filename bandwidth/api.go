@@ -42,7 +42,7 @@ var DefaultViewOption = &ViewOption{
 
 type ViewSet struct {
 	Elems  []*View     `json:"elems"`
-	Option *ViewOption `json:"option"`
+	Option *ViewOption `json:"option"` // DefaultViewOption when nil.
 }
 
 type Ring struct {
