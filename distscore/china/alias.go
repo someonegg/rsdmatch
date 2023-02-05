@@ -4,7 +4,10 @@
 
 package china
 
-import "strings"
+import (
+	"strings"
+	"unicode/utf8"
+)
 
 var (
 	ispAlias      map[string]string
@@ -89,14 +92,18 @@ func init() {
 }
 
 func UnifyLocation(l Location, proxy bool) Location {
-	l.ISP = strings.ToLower(l.ISP)
+	if isASCII(l.ISP) {
+		l.ISP = strings.ToLower(l.ISP)
+	}
 	if o, ok := ispAlias[l.ISP]; ok {
 		l.ISP = o
 	}
 	if o, ok := ispProxy[l.ISP]; proxy && ok {
 		l.ISP = o
 	}
-	l.Province = strings.ToLower(l.Province)
+	if isASCII(l.Province) {
+		l.Province = strings.ToLower(l.Province)
+	}
 	if o, ok := provinceAlias[l.Province]; ok {
 		l.Province = o
 	}
@@ -104,4 +111,14 @@ func UnifyLocation(l Location, proxy bool) Location {
 		l.Province = o
 	}
 	return l
+}
+
+func isASCII(s string) bool {
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if c >= utf8.RuneSelf {
+			return false
+		}
+	}
+	return true
 }
