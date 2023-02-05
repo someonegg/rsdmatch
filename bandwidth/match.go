@@ -14,8 +14,9 @@ import (
 )
 
 const (
-	scoreSensitivity = 10.0
-	bwUnit           = 50 // Mbps
+	scoreSensitivity   = float32(10.0)
+	scoreSensitivityEM = float32(0.1)
+	bwUnit             = 50 // Mbps
 )
 
 type affinityTable struct {
@@ -127,8 +128,12 @@ func (m *Matcher) Match(nodes NodeSet, viewss []ViewSet) (ringss []RingSet, summ
 			}
 		}
 
-		matches, _ := rsdmatch.GreedyMatcher(scoreSensitivity,
-			buyers.Option.EnoughNodeCount, m.Verbose).Match(
+		sens := scoreSensitivity
+		if buyers.Option.ExclusiveMode {
+			sens = scoreSensitivityEM
+		}
+		matches, _ := rsdmatch.GreedyMatcher(sens,
+			buyers.Option.EnoughNodeCount, buyers.Option.ExclusiveMode, m.Verbose).Match(
 			suppliers.Elems, buyers.Elems, newAffinityTable(buyers.Option, m.LocationProxy))
 		if m.Verbose {
 			fmt.Println()

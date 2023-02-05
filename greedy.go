@@ -12,13 +12,14 @@ import (
 )
 
 type greedyMatcher struct {
-	sens    float32
-	enough  int
-	verbose bool
+	sens      float32
+	enough    int
+	exclusive bool
+	verbose   bool
 }
 
-func GreedyMatcher(priceSensitivity float32, enoughSupplierCount int, verbose bool) Matcher {
-	return greedyMatcher{priceSensitivity, enoughSupplierCount, verbose}
+func GreedyMatcher(priceSensitivity float32, enoughSupplierCount int, exclusive, verbose bool) Matcher {
+	return greedyMatcher{priceSensitivity, enoughSupplierCount, exclusive, verbose}
 }
 
 type greedyAffinity struct {
@@ -107,12 +108,15 @@ func (m greedyMatcher) Match(suppliers []Supplier, buyers []Buyer, affinities Af
 		if percent > 1.0 {
 			percent = 1.0
 		}
+		if m.exclusive {
+			percent = 1.0
+		}
 
 		allocated := int64(0)
 		for i := start; i < end; i++ {
 			supplier := al[i].supplier
 			amount := int64(math.Ceil(float64(minInt64(al[i].limit, supplier.CapRest)) * percent))
-			if amount <= 0 {
+			if amount <= 0 || (m.exclusive && amount != supplier.Cap) {
 				continue
 			}
 			if m.verbose {

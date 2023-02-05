@@ -30,6 +30,8 @@ type ViewOption struct {
 	RejectScore       float32 `json:"rjs"`
 	RemoteAccessLimit float32 `json:"ral"`
 	SkipLocalOnly     bool    `json:"nolo"`
+
+	ExclusiveMode bool `json:"exclusive"`
 }
 
 var DefaultViewOption = &ViewOption{
@@ -38,6 +40,7 @@ var DefaultViewOption = &ViewOption{
 	RejectScore:       80.0,
 	RemoteAccessLimit: 0.1,
 	SkipLocalOnly:     false,
+	ExclusiveMode:     false,
 }
 
 type ViewSet struct {
