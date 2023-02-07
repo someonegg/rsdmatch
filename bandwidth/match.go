@@ -20,20 +20,22 @@ const (
 )
 
 type affinityTable struct {
-	ras  float32
-	rjs  float32
-	ral  float32
-	nolo bool
-	lp   bool
+	ras float32
+	rjs float32
+	ral float32
+
+	filter func(*Node, *View) bool
+
+	proxy bool
 }
 
 func newAffinityTable(o *ViewOption, locationProxy bool) rsdmatch.AffinityTable {
 	return &affinityTable{
-		ras:  o.RemoteAccessScore,
-		rjs:  o.RejectScore,
-		ral:  o.RemoteAccessLimit,
-		nolo: o.SkipLocalOnly,
-		lp:   locationProxy,
+		ras:    o.RemoteAccessScore,
+		rjs:    o.RejectScore,
+		ral:    o.RemoteAccessLimit,
+		filter: o.NodeFilter,
+		proxy:  locationProxy,
 	}
 }
 
@@ -44,14 +46,19 @@ func (t *affinityTable) Find(supplier *rsdmatch.Supplier, buyer *rsdmatch.Buyer)
 	score, local := china.DistScoreOf(
 		china.Location{ISP: node.ISP, Province: node.Province},
 		china.Location{ISP: view.ISP, Province: view.Province},
-		t.lp)
-	// local only nodes
-	if node.LocalOnly {
-		if !local || t.nolo {
-			return rsdmatch.Affinity{
-				Price: score,
-				Limit: nodePercentLimit(0.0),
-			}
+		t.proxy)
+	// filter
+	if t.filter != nil && !t.filter(node, view) {
+		return rsdmatch.Affinity{
+			Price: score,
+			Limit: nodePercentLimit(0.0),
+		}
+	}
+	// local only
+	if node.LocalOnly && !local {
+		return rsdmatch.Affinity{
+			Price: score,
+			Limit: nodePercentLimit(0.0),
 		}
 	}
 	// near

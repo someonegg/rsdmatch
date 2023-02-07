@@ -69,7 +69,7 @@ func doCreate(ctx context.Context, total, scale float64,
 			RemoteAccessScore: ras,
 			RejectScore:       rjs,
 			RemoteAccessLimit: ral,
-			SkipLocalOnly:     false,
+			NodeFilter:        func(n *bw.Node, v *bw.View) bool { return true },
 		},
 	}
 
