@@ -28,7 +28,8 @@ type ViewOption struct {
 	EnoughNodeCount   int     `json:"ecn"`
 	RemoteAccessScore float32 `json:"ras"`
 	RejectScore       float32 `json:"rjs"`
-	RemoteAccessLimit float32 `json:"ral"`
+	RemoteAccessLimit float32 `json:"ral"`  // 0.0-1.0
+	ScoreSensitivity  float32 `json:"sens"` // use DefaultViewOption.ScoreSensitivity when <= 0.0
 
 	ExclusiveMode bool `json:"exclusive"`
 
@@ -40,6 +41,7 @@ var DefaultViewOption = &ViewOption{
 	RemoteAccessScore: 50.0,
 	RejectScore:       80.0,
 	RemoteAccessLimit: 0.1,
+	ScoreSensitivity:  10.0,
 }
 
 type ViewSet struct {

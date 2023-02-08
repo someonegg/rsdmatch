@@ -13,11 +13,18 @@ import (
 	"github.com/someonegg/rsdmatch/distscore/china"
 )
 
-const (
-	scoreSensitivity   = float32(10.0)
-	scoreSensitivityEM = float32(0.1)
-	bwUnit             = 50 // Mbps
-)
+const bwUnit = 50 // Mbps
+
+func (o *ViewOption) Fix() {
+	if ral := o.RemoteAccessLimit; !(ral >= 0.0 && ral <= 1.0) {
+		o.RemoteAccessLimit = DefaultViewOption.RemoteAccessLimit
+		fmt.Println("RemoteAccessLimit fixed")
+	}
+	if o.ScoreSensitivity <= 0.0 {
+		o.ScoreSensitivity = DefaultViewOption.ScoreSensitivity
+		fmt.Println("ScoreSensitivity fixed")
+	}
+}
 
 type affinityTable struct {
 	ras float32
@@ -135,11 +142,7 @@ func (m *Matcher) Match(nodes NodeSet, viewss []ViewSet) (ringss []RingSet, summ
 			}
 		}
 
-		sens := scoreSensitivity
-		if buyers.Option.ExclusiveMode {
-			sens = scoreSensitivityEM
-		}
-		matches, _ := rsdmatch.GreedyMatcher(sens,
+		matches, _ := rsdmatch.GreedyMatcher(buyers.Option.ScoreSensitivity,
 			buyers.Option.EnoughNodeCount, buyers.Option.ExclusiveMode, m.Verbose).Match(
 			suppliers.Elems, buyers.Elems, newAffinityTable(buyers.Option, m.LocationProxy))
 		if m.Verbose {
@@ -263,6 +266,7 @@ func genBuyerss(viewss []ViewSet, locationProxy bool, ispScale map[string]float6
 		if option == nil {
 			option = DefaultViewOption
 		}
+		option.Fix()
 
 		buyerss = append(buyerss, buyerSet{buyers, option})
 		count += len(buyers)
