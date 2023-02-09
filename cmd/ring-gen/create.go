@@ -73,6 +73,15 @@ func doCreate(ctx context.Context, total, scale float64,
 		},
 	}
 
+	// Cold, special!!!
+	if storageMode {
+		viewSet.Option.RemoteAccessLimit = 0.0
+		viewSet.Option.ScoreSensitivity = 50.0
+		viewSet.Option.NodeFilter = func(n *bw.Node, v *bw.View) bool {
+			return !n.LocalOnly
+		}
+	}
+
 	ringss, summ := matcher.Match(nodeSet, []bw.ViewSet{viewSet})
 	fmt.Printf("%+v\n", summ)
 
@@ -110,7 +119,7 @@ func loadNodes(file string, storageMode bool) ([]*bw.Node, error) {
 			MinColdBW    = 1.6
 			MaxColdRatio = 15
 		)
-		if bwns[i].LocalOnly || bwns[i].Bandwidth < MinColdBW {
+		if bwns[i].Bandwidth < MinColdBW {
 			// disabled
 			bwns[i].Bandwidth = 0.0
 		} else {
