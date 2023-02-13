@@ -69,7 +69,8 @@ func (m greedyMatcher) Match(suppliers []Supplier, buyers []Buyer, affinities Af
 		r2 := m.ptrCompare(unsafe.Pointer(al[i].buyer), unsafe.Pointer(al[j].buyer))
 		return r1 < 0 ||
 			r1 == 0 && r2 < 0 ||
-			r1 == 0 && r2 == 0 && al[i].price < al[j].price
+			r1 == 0 && r2 == 0 &&
+				al[i].supplier.Priority > al[j].supplier.Priority
 	})
 
 	matches = make(Matches, len(buyers))
@@ -86,8 +87,12 @@ func (m greedyMatcher) Match(suppliers []Supplier, buyers []Buyer, affinities Af
 		}
 
 		available := int64(0)
+		factorSum := int64(0)
 		for i := start; i < end; i++ {
-			available += minInt64(al[i].limit, al[i].supplier.CapRest)
+			amount := minInt64(al[i].limit, al[i].supplier.CapRest)
+			factor := amount * al[i].supplier.Priority
+			available += amount
+			factorSum += factor
 		}
 
 		demandRest := buyer.DemandRest
@@ -95,41 +100,40 @@ func (m greedyMatcher) Match(suppliers []Supplier, buyers []Buyer, affinities Af
 			demandRest = 1
 		}
 
-		if demandRest <= 0 || available <= 0 {
+		if demandRest <= 0 || available <= 0 || factorSum <= 0 {
 			continue
 		}
 
 		if m.verbose {
-			fmt.Println(buyer.ID, "demand:", buyer.Demand,
-				"demand_rest:", demandRest, "available:", available)
+			fmt.Println(buyer.ID,
+				"demand:", buyer.Demand, "demand_rest:", demandRest,
+				"available:", available, "factor_sum:", factorSum)
 		}
 
-		percent := float64(demandRest) / float64(available)
-		if percent > 1.0 {
-			percent = 1.0
-		}
-		if m.exclusive {
-			percent = 1.0
-		}
-
-		allocated := int64(0)
 		for i := start; i < end; i++ {
 			supplier := al[i].supplier
-			amount := int64(math.Ceil(float64(minInt64(al[i].limit, supplier.CapRest)) * percent))
+			amount := minInt64(al[i].limit, al[i].supplier.CapRest)
+			factor := amount * al[i].supplier.Priority
+			if !m.exclusive {
+				may := math.Ceil(float64(factor) / float64(factorSum) * float64(demandRest))
+				amount = minInt64(int64(may), amount)
+			}
+			factorSum -= factor
 			if amount <= 0 || (m.exclusive && amount != supplier.Cap) {
 				continue
 			}
+			matches[buyer.ID] = append(matches[buyer.ID], BuyRecord{supplier.ID, amount})
 			if m.verbose {
-				fmt.Println("  ", al[i].price, al[i].supplier.Info, amount)
+				fmt.Println("  ", al[i].price, al[i].supplier.Info, amount, factor)
 			}
 			supplier.CapRest -= amount
-			allocated += amount
-			matches[buyer.ID] = append(matches[buyer.ID], BuyRecord{supplier.ID, amount})
-			if allocated >= demandRest && len(matches[buyer.ID]) >= m.enough {
+			buyer.DemandRest -= amount
+			demandRest -= amount
+			if demandRest <= 0 && len(matches[buyer.ID]) >= m.enough {
 				break
 			}
+			demandRest = maxInt64(1, demandRest)
 		}
-		buyer.DemandRest -= allocated
 
 		done := true
 		for i := 0; i < len(buyers); i++ {
@@ -149,6 +153,13 @@ func (m greedyMatcher) Match(suppliers []Supplier, buyers []Buyer, affinities Af
 
 func minInt64(a, b int64) int64 {
 	if a < b {
+		return a
+	}
+	return b
+}
+
+func maxInt64(a, b int64) int64 {
+	if a > b {
 		return a
 	}
 	return b

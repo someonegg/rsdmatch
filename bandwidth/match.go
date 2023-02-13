@@ -13,7 +13,7 @@ import (
 	"github.com/someonegg/rsdmatch/distscore/china"
 )
 
-const bwUnit = 50 // Mbps
+const bwUnit = 100 // Mbps
 
 func (o *ViewOption) Fix() {
 	if ral := o.RemoteAccessLimit; !(ral >= 0.0 && ral <= 1.0) {
@@ -220,6 +220,7 @@ func genSuppliers(nodes NodeSet, locationProxy bool) (supplierSet, int, map[stri
 			fmt.Println("node", node.Node, "is incomplete")
 		}
 		suppliers[i].CapRest = suppliers[i].Cap
+		suppliers[i].Priority = int64(node.Priority*1000) + 1
 		suppliers[i].Info = node
 		ispBW[location.ISP] += suppliers[i].Cap
 	}

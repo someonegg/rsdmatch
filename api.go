@@ -12,10 +12,11 @@ type Matcher interface {
 }
 
 type Supplier struct {
-	ID      string
-	Cap     int64
-	CapRest int64
-	Info    interface{}
+	ID       string
+	Cap      int64
+	CapRest  int64
+	Priority int64
+	Info     interface{}
 }
 
 type Buyer struct {

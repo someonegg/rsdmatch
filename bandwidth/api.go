@@ -9,7 +9,8 @@ type Node struct {
 	Node      string  `json:"node"`
 	ISP       string  `json:"isp"`
 	Province  string  `json:"province"`
-	Bandwidth float64 `json:"bw"` // Gbps
+	Bandwidth float64 `json:"bw"`       // Gbps,
+	Priority  float64 `json:"priority"` // Keep three decimal places.
 	LocalOnly bool    `json:"local_only"`
 }
 
