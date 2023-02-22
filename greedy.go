@@ -111,6 +111,9 @@ func (m greedyMatcher) Match(suppliers []Supplier, buyers []Buyer, affinities Af
 		}
 
 		for i := start; i < end; i++ {
+			if factorSum <= 0 {
+				break
+			}
 			supplier := al[i].supplier
 			amount := minInt64(al[i].limit, al[i].supplier.CapRest)
 			factor := amount * al[i].supplier.Priority
