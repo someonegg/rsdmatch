@@ -116,7 +116,7 @@ func loadNodes(file string, storageMode bool) ([]*bw.Node, error) {
 
 		// Cold, special!!!
 		const (
-			MinColdBW    = 1.6
+			MinColdBW    = 1.0
 			MaxColdRatio = 10
 		)
 		if bwns[i].Bandwidth < MinColdBW {
