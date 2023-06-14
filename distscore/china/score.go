@@ -41,7 +41,7 @@ var regionMap map[string]int
 
 func init() {
 	regions := map[int][]string{
-		dongBei:  {"吉林", "辽宁", "黑龙江"},
+		dongBei:  {"辽宁", "吉林", "黑龙江"},
 		huaBei:   {"河北", "北京", "天津", "山西", "内蒙古"},
 		huaZhbei: {"山东", "河南"},
 		huaZhnan: {"湖北", "湖南"},
