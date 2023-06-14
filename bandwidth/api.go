@@ -71,7 +71,8 @@ type Matcher struct {
 	// Merge views with the same location.
 	AutoMergeView bool `json:"amv"`
 	// https://pkg.go.dev/github.com/someonegg/rsdmatch/distscore/china#UnifyLocation
-	LocationProxy bool `json:"lp"`
+	LocationProxy   bool `json:"lp"`
+	AggregateRegion bool `json:"ar"`
 
 	Verbose bool `json:"vv"`
 }

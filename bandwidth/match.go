@@ -33,16 +33,18 @@ type affinityTable struct {
 
 	filter func(*Node, *View) bool
 
-	proxy bool
+	proxy      bool
+	regionMode bool
 }
 
-func newAffinityTable(o *ViewOption, locationProxy bool) rsdmatch.AffinityTable {
+func newAffinityTable(o *ViewOption, proxy, regionMode bool) rsdmatch.AffinityTable {
 	return &affinityTable{
-		ras:    o.RemoteAccessScore,
-		rjs:    o.RejectScore,
-		ral:    o.RemoteAccessLimit,
-		filter: o.NodeFilter,
-		proxy:  locationProxy,
+		ras:        o.RemoteAccessScore,
+		rjs:        o.RejectScore,
+		ral:        o.RemoteAccessLimit,
+		filter:     o.NodeFilter,
+		proxy:      proxy,
+		regionMode: regionMode,
 	}
 }
 
@@ -53,7 +55,7 @@ func (t *affinityTable) Find(supplier *rsdmatch.Supplier, buyer *rsdmatch.Buyer)
 	score, local := china.DistScoreOf(
 		china.Location{ISP: node.ISP, Province: node.Province},
 		china.Location{ISP: view.ISP, Province: view.Province},
-		t.proxy)
+		t.proxy, t.regionMode)
 	// filter
 	if t.filter != nil && !t.filter(node, view) {
 		return rsdmatch.Affinity{
@@ -96,8 +98,8 @@ func (p nodePercentLimit) Calculate(supplierCap, buyerDemand int64) int64 {
 }
 
 func (m *Matcher) Match(nodes NodeSet, viewss []ViewSet) (ringss []RingSet, summ Summary) {
-	suppliers, supplierCount, ispHasBW := genSuppliers(nodes, m.LocationProxy)
-	buyerss, buyerCount, ispNeedsBW := genBuyerss(viewss, m.LocationProxy, summ.Scales)
+	suppliers, supplierCount, ispHasBW := genSuppliers(nodes, m.LocationProxy, m.AggregateRegion)
+	buyerss, buyerCount, ispNeedsBW := genBuyerss(viewss, m.LocationProxy, m.AggregateRegion, summ.Scales)
 	if m.AutoScale {
 		summ.Scales = make(map[string]float64)
 		for isp, has := range ispHasBW {
@@ -105,7 +107,7 @@ func (m *Matcher) Match(nodes NodeSet, viewss []ViewSet) (ringss []RingSet, summ
 				summ.Scales[isp] = float64(has) / float64(needs)
 			}
 		}
-		buyerss, buyerCount, ispNeedsBW = genBuyerss(viewss, m.LocationProxy, summ.Scales)
+		buyerss, buyerCount, ispNeedsBW = genBuyerss(viewss, m.LocationProxy, m.AggregateRegion, summ.Scales)
 	}
 
 	var (
@@ -130,7 +132,7 @@ func (m *Matcher) Match(nodes NodeSet, viewss []ViewSet) (ringss []RingSet, summ
 	for _, buyers := range buyerss {
 		var buyerViews map[string][]string
 		if m.AutoMergeView {
-			buyers.Elems, buyerViews = mergeBuyers(buyers.Elems, m.LocationProxy)
+			buyers.Elems, buyerViews = mergeBuyers(buyers.Elems, m.LocationProxy, m.AggregateRegion)
 			if m.Verbose {
 				fmt.Println("merged views:")
 				for _, views := range buyerViews {
@@ -144,7 +146,7 @@ func (m *Matcher) Match(nodes NodeSet, viewss []ViewSet) (ringss []RingSet, summ
 
 		matches, _ := rsdmatch.GreedyMatcher(buyers.Option.ScoreSensitivity,
 			buyers.Option.EnoughNodeCount, buyers.Option.ExclusiveMode, m.Verbose).Match(
-			suppliers.Elems, buyers.Elems, newAffinityTable(buyers.Option, m.LocationProxy))
+			suppliers.Elems, buyers.Elems, newAffinityTable(buyers.Option, m.LocationProxy, m.AggregateRegion))
 		if m.Verbose {
 			fmt.Println()
 		}
@@ -206,13 +208,13 @@ type supplierSet struct {
 	Elems []rsdmatch.Supplier
 }
 
-func genSuppliers(nodes NodeSet, locationProxy bool) (supplierSet, int, map[string]int64) {
+func genSuppliers(nodes NodeSet, locationProxy, aggregateRegion bool) (supplierSet, int, map[string]int64) {
 	ispBW := make(map[string]int64)
 
 	suppliers := make([]rsdmatch.Supplier, len(nodes.Elems))
 
 	for i, node := range nodes.Elems {
-		location := china.UnifyLocation(china.Location{ISP: node.ISP, Province: node.Province}, locationProxy)
+		location := china.UnifyLocation(china.Location{ISP: node.ISP, Province: node.Province}, locationProxy, aggregateRegion)
 		suppliers[i].ID = node.Node
 		suppliers[i].Cap = int64(math.Floor(node.Bandwidth * float64(1000/bwUnit)))
 		if node.ISP == "" || node.Province == "" {
@@ -237,7 +239,7 @@ type buyerSet struct {
 	Option *ViewOption
 }
 
-func genBuyerss(viewss []ViewSet, locationProxy bool, ispScale map[string]float64) ([]buyerSet, int, map[string]int64) {
+func genBuyerss(viewss []ViewSet, locationProxy, aggregateRegion bool, ispScale map[string]float64) ([]buyerSet, int, map[string]int64) {
 	count := 0
 	ispBW := make(map[string]int64)
 
@@ -247,7 +249,7 @@ func genBuyerss(viewss []ViewSet, locationProxy bool, ispScale map[string]float6
 		buyers := make([]rsdmatch.Buyer, len(views.Elems))
 
 		for i, view := range views.Elems {
-			location := china.UnifyLocation(china.Location{ISP: view.ISP, Province: view.Province}, locationProxy)
+			location := china.UnifyLocation(china.Location{ISP: view.ISP, Province: view.Province}, locationProxy, aggregateRegion)
 			buyers[i].ID = view.View
 			scale := 1.0
 			if s, ok := ispScale[location.ISP]; ok {
@@ -276,7 +278,7 @@ func genBuyerss(viewss []ViewSet, locationProxy bool, ispScale map[string]float6
 	return buyerss, count, ispBW
 }
 
-func mergeBuyers(raws []rsdmatch.Buyer, locationProxy bool) (merged []rsdmatch.Buyer, buyerViews map[string][]string) {
+func mergeBuyers(raws []rsdmatch.Buyer, locationProxy, aggregateRegion bool) (merged []rsdmatch.Buyer, buyerViews map[string][]string) {
 	merged = make([]rsdmatch.Buyer, len(raws))
 	buyerViews = make(map[string][]string, len(raws))
 
@@ -284,7 +286,7 @@ func mergeBuyers(raws []rsdmatch.Buyer, locationProxy bool) (merged []rsdmatch.B
 	next := 0
 	for _, buyer := range raws {
 		view := buyer.Info.(*View)
-		location := china.UnifyLocation(china.Location{ISP: view.ISP, Province: view.Province}, locationProxy)
+		location := china.UnifyLocation(china.Location{ISP: view.ISP, Province: view.Province}, locationProxy, aggregateRegion)
 		buyerID := location.Province + "-" + location.ISP
 		if idx, ok := indexes[buyerID]; ok {
 			merged[idx].Demand += buyer.Demand

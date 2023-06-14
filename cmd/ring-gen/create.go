@@ -36,7 +36,7 @@ type Rings struct {
 func doCreate(ctx context.Context, total, scale float64,
 	nodeFile, viewFile, ringFile string,
 	ecn int, ras, rjs float32, ral float32,
-	storageMode, verbose bool) error {
+	regionMode, storageMode, verbose bool) error {
 
 	autoScale := false
 	if scale <= 0.0 {
@@ -55,10 +55,11 @@ func doCreate(ctx context.Context, total, scale float64,
 	}
 
 	matcher := &bw.Matcher{
-		AutoScale:     autoScale,
-		AutoMergeView: true,
-		LocationProxy: true,
-		Verbose:       verbose,
+		AutoScale:       autoScale,
+		AutoMergeView:   true,
+		LocationProxy:   true,
+		AggregateRegion: regionMode,
+		Verbose:         verbose,
 	}
 
 	nodeSet := bw.NodeSet{Elems: nodes}

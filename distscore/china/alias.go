@@ -14,6 +14,7 @@ var (
 	ispProxy      map[string]string
 	provinceAlias map[string]string
 	provinceProxy map[string]string
+	regionProxy   map[string]string
 )
 
 func init() {
@@ -91,7 +92,7 @@ func init() {
 	}
 }
 
-func UnifyLocation(l Location, proxy bool) Location {
+func UnifyLocation(l Location, proxy, regionMode bool) Location {
 	if isASCII(l.ISP) {
 		l.ISP = strings.ToLower(l.ISP)
 	}
@@ -108,6 +109,9 @@ func UnifyLocation(l Location, proxy bool) Location {
 		l.Province = o
 	}
 	if o, ok := provinceProxy[l.Province]; proxy && ok {
+		l.Province = o
+	}
+	if o, ok := regionProxy[l.Province]; regionMode && ok {
 		l.Province = o
 	}
 	return l

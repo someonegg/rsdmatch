@@ -42,7 +42,7 @@ var regionMap map[string]int
 func init() {
 	regions := map[int][]string{
 		dongBei:  {"吉林", "辽宁", "黑龙江"},
-		huaBei:   {"北京", "天津", "河北", "山西", "内蒙古"},
+		huaBei:   {"河北", "北京", "天津", "山西", "内蒙古"},
 		huaZhbei: {"山东", "河南"},
 		huaZhnan: {"湖北", "湖南"},
 		huaDong:  {"江苏", "安徽", "浙江", "江西", "福建", "上海"},
@@ -60,6 +60,16 @@ func init() {
 	for region, provinces := range regions {
 		for _, province := range provinces {
 			regionMap[province] = region
+		}
+	}
+
+	regionProxy = make(map[string]string)
+	for _, provinces := range regions {
+		if len(provinces) <= 1 {
+			continue
+		}
+		for i := 1; i < len(provinces); i++ {
+			regionProxy[provinces[i]] = provinces[0]
 		}
 	}
 }
@@ -87,8 +97,8 @@ func init() {
 //	ISP: 70
 //	AdjacentRegion: 80
 //	Other: 90
-func DistScoreOf(a, b Location, proxy bool) (score float32, local bool) {
-	a, b = UnifyLocation(a, proxy), UnifyLocation(b, proxy)
+func DistScoreOf(a, b Location, proxy, regionMode bool) (score float32, local bool) {
+	a, b = UnifyLocation(a, proxy, regionMode), UnifyLocation(b, proxy, regionMode)
 	rA, rB := regionMap[a.Province], regionMap[b.Province]
 	sameRegion := rA == rB
 
