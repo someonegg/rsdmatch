@@ -54,8 +54,12 @@ func doCreate(ctx context.Context, total, scale float64,
 		return fmt.Errorf("load view file failed: %w", err)
 	}
 
+	autoScaleMin, autoScaleMax := 0.5, 2.0
+
 	matcher := &bw.Matcher{
 		AutoScale:       autoScale,
+		AutoScaleMin:    &autoScaleMin,
+		AutoScaleMax:    &autoScaleMax,
 		AutoMergeView:   true,
 		LocationProxy:   true,
 		AggregateRegion: regionMode,

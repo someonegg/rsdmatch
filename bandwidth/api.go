@@ -68,6 +68,9 @@ type Matcher struct {
 	// When set, matcher will auto-scale the views's bandwidth to fit nodes's.
 	AutoScale bool `json:"as"`
 
+	AutoScaleMin *float64 `json:"asmin"`
+	AutoScaleMax *float64 `json:"asmax"`
+
 	// Merge views with the same location.
 	AutoMergeView bool `json:"amv"`
 	// https://pkg.go.dev/github.com/someonegg/rsdmatch/distscore/china#UnifyLocation

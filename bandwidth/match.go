@@ -104,7 +104,14 @@ func (m *Matcher) Match(nodes NodeSet, viewss []ViewSet) (ringss []RingSet, summ
 		summ.Scales = make(map[string]float64)
 		for isp, has := range ispHasBW {
 			if needs := ispNeedsBW[isp]; has > 0 && needs > 0 {
-				summ.Scales[isp] = float64(has) / float64(needs)
+				scale := float64(has) / float64(needs)
+				switch {
+				case m.AutoScaleMin != nil && scale < *m.AutoScaleMin:
+					scale = *m.AutoScaleMin
+				case m.AutoScaleMax != nil && scale > *m.AutoScaleMax:
+					scale = *m.AutoScaleMax
+				}
+				summ.Scales[isp] = scale
 			}
 		}
 		buyerss, buyerCount, ispNeedsBW = genBuyerss(viewss, m.LocationProxy, m.AggregateRegion, summ.Scales)
