@@ -66,8 +66,7 @@ type RingSet struct {
 
 type Matcher struct {
 	// When set, matcher will auto-scale the views's bandwidth to fit nodes's.
-	AutoScale bool `json:"as"`
-
+	AutoScale    bool     `json:"as"`
 	AutoScaleMin *float64 `json:"asmin"`
 	AutoScaleMax *float64 `json:"asmax"`
 
