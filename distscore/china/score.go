@@ -121,10 +121,13 @@ func DistScoreOf(client, server Location, proxy, regionMode bool) (score float32
 					return
 				}
 			}
-		}
 
-		if centralMap[a.Province] && centralMap[b.Province] {
-			score = 40.0
+			if centralMap[a.Province] {
+				score = 40.0
+				return
+			}
+
+			score = 60.0
 			return
 		}
 
