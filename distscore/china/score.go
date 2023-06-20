@@ -97,8 +97,8 @@ func init() {
 //	ISP: 70
 //	AdjacentRegion: 80
 //	Other: 90
-func DistScoreOf(a, b Location, proxy, regionMode bool) (score float32, local bool) {
-	a, b = UnifyLocation(a, proxy, regionMode), UnifyLocation(b, proxy, regionMode)
+func DistScoreOf(client, server Location, proxy, regionMode bool) (score float32, local bool) {
+	a, b := UnifyLocation(false, client, proxy, regionMode), UnifyLocation(true, server, proxy, regionMode)
 	rA, rB := regionMap[a.Province], regionMap[b.Province]
 	sameRegion := rA == rB
 
@@ -114,10 +114,12 @@ func DistScoreOf(a, b Location, proxy, regionMode bool) (score float32, local bo
 			return
 		}
 
-		for _, r := range regionNeighbors[rA] {
-			if rB == r {
-				score = 30.0
-				return
+		if centralMap[b.Province] {
+			for _, r := range regionNeighbors[rA] {
+				if rB == r {
+					score = 30.0
+					return
+				}
 			}
 		}
 

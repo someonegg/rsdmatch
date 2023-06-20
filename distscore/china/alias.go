@@ -92,7 +92,7 @@ func init() {
 	}
 }
 
-func UnifyLocation(l Location, proxy, regionMode bool) Location {
+func UnifyLocation(server bool, l Location, proxy, regionMode bool) Location {
 	if isASCII(l.ISP) {
 		l.ISP = strings.ToLower(l.ISP)
 	}
@@ -110,6 +110,9 @@ func UnifyLocation(l Location, proxy, regionMode bool) Location {
 	}
 	if o, ok := provinceProxy[l.Province]; proxy && ok {
 		l.Province = o
+	}
+	if server && !centralMap[l.Province] {
+		regionMode = false
 	}
 	if o, ok := regionProxy[l.Province]; regionMode && ok {
 		l.Province = o

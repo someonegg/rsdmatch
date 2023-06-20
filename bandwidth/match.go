@@ -53,8 +53,8 @@ func (t *affinityTable) Find(supplier *rsdmatch.Supplier, buyer *rsdmatch.Buyer)
 	view := buyer.Info.(*View)
 
 	score, local := china.DistScoreOf(
-		china.Location{ISP: node.ISP, Province: node.Province},
 		china.Location{ISP: view.ISP, Province: view.Province},
+		china.Location{ISP: node.ISP, Province: node.Province},
 		t.proxy, t.regionMode)
 	// filter
 	if t.filter != nil && !t.filter(node, view) {
@@ -221,7 +221,7 @@ func genSuppliers(nodes NodeSet, locationProxy, aggregateRegion bool) (supplierS
 	suppliers := make([]rsdmatch.Supplier, len(nodes.Elems))
 
 	for i, node := range nodes.Elems {
-		location := china.UnifyLocation(china.Location{ISP: node.ISP, Province: node.Province}, locationProxy, aggregateRegion)
+		location := china.UnifyLocation(true, china.Location{ISP: node.ISP, Province: node.Province}, locationProxy, aggregateRegion)
 		suppliers[i].ID = node.Node
 		suppliers[i].Cap = int64(math.Floor(node.Bandwidth * float64(1000/bwUnit)))
 		if node.ISP == "" || node.Province == "" {
@@ -256,7 +256,7 @@ func genBuyerss(viewss []ViewSet, locationProxy, aggregateRegion bool, ispScale 
 		buyers := make([]rsdmatch.Buyer, len(views.Elems))
 
 		for i, view := range views.Elems {
-			location := china.UnifyLocation(china.Location{ISP: view.ISP, Province: view.Province}, locationProxy, aggregateRegion)
+			location := china.UnifyLocation(false, china.Location{ISP: view.ISP, Province: view.Province}, locationProxy, aggregateRegion)
 			buyers[i].ID = view.View
 			scale := 1.0
 			if s, ok := ispScale[location.ISP]; ok {
@@ -293,7 +293,7 @@ func mergeBuyers(raws []rsdmatch.Buyer, locationProxy, aggregateRegion bool) (me
 	next := 0
 	for _, buyer := range raws {
 		view := buyer.Info.(*View)
-		location := china.UnifyLocation(china.Location{ISP: view.ISP, Province: view.Province}, locationProxy, aggregateRegion)
+		location := china.UnifyLocation(false, china.Location{ISP: view.ISP, Province: view.Province}, locationProxy, aggregateRegion)
 		buyerID := location.Province + "-" + location.ISP
 		if idx, ok := indexes[buyerID]; ok {
 			merged[idx].Demand += buyer.Demand
