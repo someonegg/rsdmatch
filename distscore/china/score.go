@@ -161,3 +161,7 @@ func DistScoreOf(client, server Location, proxy, regionMode bool) (score float32
 	score = 90.0
 	return
 }
+
+func InCentral(l Location) bool {
+	return centralMap[UnifyLocation(false, l, false, false).Province]
+}
