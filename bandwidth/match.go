@@ -231,7 +231,9 @@ func genSuppliers(nodes NodeSet, locationProxy, aggregateRegion bool) (supplierS
 		suppliers[i].CapRest = suppliers[i].Cap
 		suppliers[i].Priority = int64(node.Priority*1000) + 1
 		suppliers[i].Info = node
-		ispBW[location.ISP] += suppliers[i].Cap
+		if china.InCentral(china.Location{ISP: node.ISP, Province: node.Province}) {
+			ispBW[location.ISP] += suppliers[i].Cap
+		}
 	}
 
 	sort.Slice(suppliers, func(i, j int) bool {
@@ -265,7 +267,9 @@ func genBuyerss(viewss []ViewSet, locationProxy, aggregateRegion bool, ispScale 
 			buyers[i].Demand = int64(math.Ceil(view.Bandwidth * scale * float64(1000/bwUnit)))
 			buyers[i].DemandRest = buyers[i].Demand
 			buyers[i].Info = view
-			ispBW[location.ISP] += buyers[i].Demand
+			if china.InCentral(china.Location{ISP: view.ISP, Province: view.Province}) {
+				ispBW[location.ISP] += buyers[i].Demand
+			}
 		}
 
 		sort.Slice(buyers, func(i, j int) bool {
