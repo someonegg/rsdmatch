@@ -49,7 +49,7 @@ func doCreate(ctx context.Context, total, scale float64,
 		return fmt.Errorf("load node file failed: %w", err)
 	}
 
-	views, err := loadViews(viewFile, total, scale)
+	views, ispMode, err := loadViews(viewFile, total, scale)
 	if err != nil {
 		return fmt.Errorf("load view file failed: %w", err)
 	}
@@ -78,8 +78,13 @@ func doCreate(ctx context.Context, total, scale float64,
 		},
 	}
 
-	// Cold, special!!!
-	if storageMode {
+	if regionMode {
+		fmt.Println("region mode")
+		viewSet.Option.ScoreSensitivity = 30.0
+	}
+
+	if ispMode {
+		fmt.Println("isp mode")
 		viewSet.Option.RemoteAccessLimit = 0.0
 		viewSet.Option.ScoreSensitivity = 50.0
 		viewSet.Option.NodeFilter = func(n *bw.Node, v *bw.View) bool {
@@ -140,19 +145,20 @@ func loadNodes(file string, storageMode bool) ([]*bw.Node, error) {
 	return bwns, nil
 }
 
-func loadViews(file string, total, scale float64) ([]*bw.View, error) {
+func loadViews(file string, total, scale float64) ([]*bw.View, bool, error) {
 	data, err := ioutil.ReadFile(file)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
 	var views []*View
 
 	decoder := json.NewDecoder(bytes.NewReader(data))
 	if err := decoder.Decode(&views); err != nil {
-		return nil, err
+		return nil, false, err
 	}
 
+	ispMode := true
 	bwvs := make([]*bw.View, len(views))
 
 	for i, view := range views {
@@ -160,8 +166,11 @@ func loadViews(file string, total, scale float64) ([]*bw.View, error) {
 		if bwvs[i].Bandwidth == 0.0 {
 			bwvs[i].Bandwidth = view.Percent * total
 		}
+		ss := strings.Split(bwvs[i].View, "-")
+		if len(ss) > 1 {
+			ispMode = false
+		}
 		if bwvs[i].ISP == "" || bwvs[i].Province == "" {
-			ss := strings.Split(bwvs[i].View, "-")
 			if len(ss) == 6 {
 				// 默认-广东-华南-移动-中国-亚洲
 				bwvs[i].ISP = ss[3]
@@ -181,7 +190,7 @@ func loadViews(file string, total, scale float64) ([]*bw.View, error) {
 		bwvs[i].Bandwidth *= scale
 	}
 
-	return bwvs, nil
+	return bwvs, ispMode, nil
 }
 
 func writeRings(file string, rings []*bw.Ring) error {
