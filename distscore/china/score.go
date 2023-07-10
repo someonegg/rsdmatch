@@ -74,15 +74,22 @@ func init() {
 	}
 }
 
-var centralMap map[string]bool
+var normalMap, centralMap map[string]bool
 
 func init() {
-	provinces := []string{"北京", "天津", "河北", "山西", "陕西", "山东", "河南", "湖北", "湖南",
-		"江苏", "安徽", "浙江", "江西", "福建", "上海", "广东", "广西", "四川", "贵州", "重庆", "中国"}
-
+	normalMap = make(map[string]bool)
 	centralMap = make(map[string]bool)
-	for _, province := range provinces {
+
+	centrals := []string{"北京", "天津", "河北", "山西", "山东", "河南", "湖北", "湖南",
+		"江苏", "安徽", "浙江", "江西", "福建", "上海", "广东", "广西", "中国"}
+	for _, province := range centrals {
+		normalMap[province] = true
 		centralMap[province] = true
+	}
+
+	normals := []string{"辽宁", "陕西", "四川", "重庆", "贵州"}
+	for _, province := range normals {
+		normalMap[province] = true
 	}
 }
 
@@ -114,20 +121,22 @@ func DistScoreOf(client, server Location, proxy, regionMode bool) (score float32
 			return
 		}
 
-		if centralMap[b.Province] {
+		if normalMap[b.Province] {
 			for _, r := range regionNeighbors[rA] {
 				if rB == r {
 					score = 30.0
 					return
 				}
 			}
+		}
 
+		if centralMap[b.Province] {
 			if centralMap[a.Province] {
 				score = 40.0
 				return
 			}
 
-			score = 60.0
+			score = 50.0
 			return
 		}
 
@@ -135,11 +144,11 @@ func DistScoreOf(client, server Location, proxy, regionMode bool) (score float32
 		return
 	}
 
-	isNormal := func(r int) bool {
-		return !(r == unknown || r == xinJiang || r == xiZang)
+	inFrontier := func(r int) bool {
+		return r == unknown || r == xinJiang || r == xiZang
 	}
 
-	if isNormal(rA) && isNormal(rB) {
+	if !(inFrontier(rA) || inFrontier(rB)) {
 		if a.Province == b.Province {
 			score = 50.0
 			return
@@ -160,6 +169,10 @@ func DistScoreOf(client, server Location, proxy, regionMode bool) (score float32
 
 	score = 90.0
 	return
+}
+
+func InNormal(l Location) bool {
+	return normalMap[UnifyLocation(false, l, false, false).Province]
 }
 
 func InCentral(l Location) bool {

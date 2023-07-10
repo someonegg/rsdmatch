@@ -108,11 +108,12 @@ func UnifyLocation(server bool, l Location, proxy, regionMode bool) Location {
 	if o, ok := provinceAlias[l.Province]; ok {
 		l.Province = o
 	}
+	if server && !normalMap[l.Province] {
+		proxy = false
+		regionMode = false
+	}
 	if o, ok := provinceProxy[l.Province]; proxy && ok {
 		l.Province = o
-	}
-	if server && !centralMap[l.Province] {
-		regionMode = false
 	}
 	if o, ok := regionProxy[l.Province]; regionMode && ok {
 		l.Province = o
