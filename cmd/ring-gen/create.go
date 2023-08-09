@@ -10,6 +10,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"math"
+	"sort"
 	"strings"
 
 	bw "github.com/someonegg/rsdmatch/bandwidth"
@@ -36,12 +38,20 @@ type Rings struct {
 func doCreate(ctx context.Context, total, scale float64,
 	nodeFile, viewFile, ringFile string,
 	ecn int, ras, rjs float32, ral float32,
-	regionMode, storageMode, verbose bool) error {
+	regionMode, distMode, storageMode, verbose bool) error {
 
 	autoScale := false
 	if scale <= 0.0 {
 		autoScale = true
 		scale = 1.0
+	}
+
+	if distMode {
+		ecn = math.MaxInt
+		ras = 20
+		rjs = 20
+		ral = 0
+		regionMode = false
 	}
 
 	nodes, err := loadNodes(nodeFile, storageMode)
@@ -60,8 +70,8 @@ func doCreate(ctx context.Context, total, scale float64,
 		AutoScale:       autoScale,
 		AutoScaleMin:    &autoScaleMin,
 		AutoScaleMax:    &autoScaleMax,
-		AutoMergeView:   true,
-		LocationProxy:   true,
+		AutoMergeView:   !distMode,
+		LocationProxy:   !distMode,
 		AggregateRegion: regionMode,
 		Verbose:         verbose,
 	}
@@ -74,6 +84,7 @@ func doCreate(ctx context.Context, total, scale float64,
 			RemoteAccessScore: ras,
 			RejectScore:       rjs,
 			RemoteAccessLimit: ral,
+			ExclusiveMode:     distMode,
 			NodeFilter:        func(n *bw.Node, v *bw.View) bool { return true },
 		},
 	}
@@ -95,7 +106,11 @@ func doCreate(ctx context.Context, total, scale float64,
 	ringss, summ := matcher.Match(nodeSet, []bw.ViewSet{viewSet})
 	fmt.Printf("%+v\n", summ)
 
-	err = writeRings(ringFile, ringss[0].Elems)
+	rings := ringss[0].Elems
+	if distMode {
+		rings = mergeByDist(rings)
+	}
+	err = writeRings(ringFile, rings)
 	if err != nil {
 		return fmt.Errorf("write ring file failed: %w", err)
 	}
@@ -212,4 +227,59 @@ func writeRings(file string, rings []*bw.Ring) error {
 	}
 
 	return ioutil.WriteFile(file, buf.Bytes(), 0644)
+}
+
+func mergeByDist(rings []*bw.Ring) []*bw.Ring {
+	dists := map[string][]string{
+		"东北": {"辽宁", "吉林", "黑龙江"},
+		"华北": {"河北", "北京", "天津", "山西", "内蒙古"},
+		"华中": {"河南", "湖北", "湖南"},
+		"华东": {"山东", "江苏", "安徽", "浙江", "江西", "福建", "上海"},
+		"华南": {"广东", "广西", "海南"},
+		"西北": {"陕西", "宁夏", "甘肃", "青海", "新疆"},
+		"西南": {"四川", "云南", "贵州", "重庆", "西藏"},
+	}
+	distMap := make(map[string]string)
+	for dist, provinces := range dists {
+		for _, province := range provinces {
+			distMap[province] = dist
+		}
+	}
+
+	drings := make(map[string]*bw.Ring)
+
+	for _, ring := range rings {
+		var name string
+		{
+			ss := strings.Split(ring.Name, "-")
+			province, isp := ss[0], ss[1]
+			if dist, ok := distMap[province]; ok {
+				name = dist + "-" + isp
+			}
+		}
+		if name == "" {
+			continue
+		}
+
+		dring := drings[name]
+		if dring == nil {
+			dring = &bw.Ring{
+				Name:   name,
+				Groups: make([]bw.Group, 1),
+			}
+			drings[name] = dring
+		}
+
+		dring.Groups[0].Nodes = append(dring.Groups[0].Nodes, ring.Groups[0].Nodes...)
+		dring.Groups[0].NodesWeight = append(dring.Groups[0].NodesWeight, ring.Groups[0].NodesWeight...)
+	}
+
+	var ret []*bw.Ring
+	for _, ring := range drings {
+		ret = append(ret, ring)
+	}
+	sort.Slice(ret, func(i, j int) bool {
+		return ret[i].Name < ret[j].Name
+	})
+	return ret
 }

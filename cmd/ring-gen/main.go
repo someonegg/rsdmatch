@@ -89,6 +89,12 @@ var createCmd = &cli.Command{
 			Usage:    "aggregate region",
 		},
 		&cli.BoolFlag{
+			Name:     "dist",
+			Required: false,
+			Value:    false,
+			Usage:    "aggregate by standard region",
+		},
+		&cli.BoolFlag{
 			Name:     "storage",
 			Required: false,
 			Value:    false,
@@ -113,6 +119,7 @@ var createCmd = &cli.Command{
 			rjs         = float32(ctx.Float64("rjs"))
 			ral         = float32(ctx.Float64("ral"))
 			regionMode  = ctx.Bool("region")
+			distMode    = ctx.Bool("dist")
 			storageMode = ctx.Bool("storage")
 			verbose     = ctx.Bool("vv")
 		)
@@ -131,6 +138,6 @@ var createCmd = &cli.Command{
 		return doCreate(
 			ctx.Context, bw, scale,
 			nodeFile, viewFile, ringFile,
-			ecn, ras, rjs, ral, regionMode, storageMode, verbose)
+			ecn, ras, rjs, ral, regionMode, distMode, storageMode, verbose)
 	},
 }
