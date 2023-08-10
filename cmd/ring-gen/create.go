@@ -10,7 +10,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"math"
 	"sort"
 	"strings"
 
@@ -46,12 +45,15 @@ func doCreate(ctx context.Context, total, scale float64,
 		scale = 1.0
 	}
 
+	autoMergeView := true
+	locationProxy := true
+	exclusiveMode := false
+
 	if distMode {
-		ecn = math.MaxInt
-		ras = 20
-		rjs = 20
-		ral = 0
 		regionMode = false
+		autoMergeView = false
+		locationProxy = false
+		exclusiveMode = true
 	}
 
 	nodes, err := loadNodes(nodeFile, storageMode)
@@ -70,8 +72,8 @@ func doCreate(ctx context.Context, total, scale float64,
 		AutoScale:       autoScale,
 		AutoScaleMin:    &autoScaleMin,
 		AutoScaleMax:    &autoScaleMax,
-		AutoMergeView:   !distMode,
-		LocationProxy:   !distMode,
+		AutoMergeView:   autoMergeView,
+		LocationProxy:   locationProxy,
 		AggregateRegion: regionMode,
 		Verbose:         verbose,
 	}
@@ -84,7 +86,7 @@ func doCreate(ctx context.Context, total, scale float64,
 			RemoteAccessScore: ras,
 			RejectScore:       rjs,
 			RemoteAccessLimit: ral,
-			ExclusiveMode:     distMode,
+			ExclusiveMode:     exclusiveMode,
 			NodeFilter:        func(n *bw.Node, v *bw.View) bool { return true },
 		},
 	}
