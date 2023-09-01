@@ -87,7 +87,7 @@ func init() {
 		centralMap[province] = true
 	}
 
-	normals := []string{"辽宁", "陕西", "四川", "重庆", "贵州"}
+	normals := []string{"辽宁", "陕西", "甘肃", "四川", "重庆", "贵州"}
 	for _, province := range normals {
 		normalMap[province] = true
 	}
