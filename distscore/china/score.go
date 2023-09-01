@@ -135,7 +135,9 @@ func DistScoreOf(client, server Location, proxy, regionMode bool) (score float32
 				score = 40.0
 				return
 			}
+		}
 
+		if normalMap[b.Province] {
 			score = 50.0
 			return
 		}
