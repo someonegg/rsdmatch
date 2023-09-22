@@ -114,6 +114,7 @@ func (m greedyMatcher) Match(suppliers []Supplier, buyers []Buyer, affinities Af
 			if factorSum <= 0 {
 				break
 			}
+
 			supplier := al[i].supplier
 			amount := minInt64(al[i].limit, al[i].supplier.CapRest)
 			factor := amount * al[i].supplier.Priority
@@ -125,10 +126,23 @@ func (m greedyMatcher) Match(suppliers []Supplier, buyers []Buyer, affinities Af
 			if amount <= 0 || (m.exclusive && amount != supplier.Cap) {
 				continue
 			}
-			matches[buyer.ID] = append(matches[buyer.ID], BuyRecord{supplier.ID, amount})
+
+			records, recorded := matches[buyer.ID], false
+			for i := 0; i < len(records); i++ {
+				if records[i].SupplierID == supplier.ID {
+					recorded = true
+					records[i].Amount += amount
+				}
+			}
+			if !recorded {
+				records = append(records, BuyRecord{supplier.ID, amount})
+			}
+			matches[buyer.ID] = records
+
 			if m.verbose {
 				fmt.Println("  ", al[i].price, al[i].supplier.Info, amount, factor)
 			}
+
 			supplier.CapRest -= amount
 			buyer.DemandRest -= amount
 			demandRest -= amount
