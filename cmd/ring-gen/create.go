@@ -10,7 +10,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"sort"
 	"strings"
 
 	bw "github.com/someonegg/rsdmatch/bandwidth"
@@ -91,6 +90,11 @@ func doCreate(ctx context.Context, total, scale float64,
 		},
 	}
 
+	if distMode {
+		fmt.Println("dist mode")
+		mergeByDist(viewSet.Elems)
+	}
+
 	if regionMode {
 		fmt.Println("region mode")
 		viewSet.Option.ScoreSensitivity = 30.0
@@ -108,11 +112,7 @@ func doCreate(ctx context.Context, total, scale float64,
 	ringss, summ := matcher.Match(nodeSet, []bw.ViewSet{viewSet})
 	fmt.Printf("%+v\n", summ)
 
-	rings := ringss[0].Elems
-	if distMode {
-		rings = mergeByDist(rings)
-	}
-	err = writeRings(ringFile, rings)
+	err = writeRings(ringFile, ringss[0].Elems)
 	if err != nil {
 		return fmt.Errorf("write ring file failed: %w", err)
 	}
@@ -231,7 +231,7 @@ func writeRings(file string, rings []*bw.Ring) error {
 	return ioutil.WriteFile(file, buf.Bytes(), 0644)
 }
 
-func mergeByDist(rings []*bw.Ring) []*bw.Ring {
+func mergeByDist(views []*bw.View) {
 	dists := map[string][]string{
 		"东北": {"辽宁", "吉林", "黑龙江"},
 		"华北": {"河北", "北京", "天津", "山西", "内蒙古"},
@@ -248,40 +248,11 @@ func mergeByDist(rings []*bw.Ring) []*bw.Ring {
 		}
 	}
 
-	drings := make(map[string]*bw.Ring)
-
-	for _, ring := range rings {
-		var name string
-		{
-			ss := strings.Split(ring.Name, "-")
-			province, isp := ss[0], ss[1]
-			if dist, ok := distMap[province]; ok {
-				name = dist + "-" + isp
-			}
+	for _, view := range views {
+		ss := strings.Split(view.View, "-")
+		province, isp := ss[0], ss[1]
+		if dist, ok := distMap[province]; ok {
+			view.View = dist + "-" + isp
 		}
-		if name == "" {
-			continue
-		}
-
-		dring := drings[name]
-		if dring == nil {
-			dring = &bw.Ring{
-				Name:   name,
-				Groups: make([]bw.Group, 1),
-			}
-			drings[name] = dring
-		}
-
-		dring.Groups[0].Nodes = append(dring.Groups[0].Nodes, ring.Groups[0].Nodes...)
-		dring.Groups[0].NodesWeight = append(dring.Groups[0].NodesWeight, ring.Groups[0].NodesWeight...)
 	}
-
-	var ret []*bw.Ring
-	for _, ring := range drings {
-		ret = append(ret, ring)
-	}
-	sort.Slice(ret, func(i, j int) bool {
-		return ret[i].Name < ret[j].Name
-	})
-	return ret
 }
