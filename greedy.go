@@ -132,6 +132,7 @@ func (m greedyMatcher) Match(suppliers []Supplier, buyers []Buyer, affinities Af
 				if records[i].SupplierID == supplier.ID {
 					recorded = true
 					records[i].Amount += amount
+					break
 				}
 			}
 			if !recorded {
