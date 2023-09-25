@@ -52,6 +52,7 @@ type ViewSet struct {
 
 type Ring struct {
 	Name   string  `json:"name"`
+	Demand int64   `json:"demand"`
 	Groups []Group `json:"groups"`
 }
 

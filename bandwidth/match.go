@@ -158,6 +158,7 @@ func (m *Matcher) Match(nodes NodeSet, viewss []ViewSet) (ringss []RingSet, summ
 			fmt.Println()
 		}
 
+		buyerDemand := make(map[string]int64)
 		{
 			elems := buyers.Elems
 			sort.Slice(elems, func(i, j int) bool {
@@ -165,13 +166,12 @@ func (m *Matcher) Match(nodes NodeSet, viewss []ViewSet) (ringss []RingSet, summ
 			})
 			rests := int64(0)
 			for _, elem := range elems {
+				buyerDemand[elem.ID] += elem.Demand * bwUnit
 				if rest := elem.DemandRest; rest > 0 {
 					rests += rest
 					if m.Verbose {
 						fmt.Println(elem.ID, "demand:", elem.Demand*bwUnit, "demand_rest:", rest*bwUnit)
 					}
-				} else {
-					break
 				}
 			}
 			if m.Verbose && rests > 0 {
@@ -181,7 +181,7 @@ func (m *Matcher) Match(nodes NodeSet, viewss []ViewSet) (ringss []RingSet, summ
 			summ.BandwidthNeeds += float64(rests) / float64(1000/bwUnit)
 		}
 
-		ringss = append(ringss, genRings(matches, buyerViews))
+		ringss = append(ringss, genRings(matches, buyerViews, buyerDemand))
 	}
 
 	{
@@ -323,7 +323,7 @@ func mergeBuyers(raws []rsdmatch.Buyer, locationProxy, aggregateRegion bool) (me
 	return
 }
 
-func genRings(matches rsdmatch.Matches, buyerViews map[string][]string) RingSet {
+func genRings(matches rsdmatch.Matches, buyerViews map[string][]string, buyerDemand map[string]int64) RingSet {
 	var rings []*Ring
 
 	makeGroup := func(records []rsdmatch.BuyRecord) Group {
@@ -340,10 +340,12 @@ func genRings(matches rsdmatch.Matches, buyerViews map[string][]string) RingSet 
 
 	for buyerID, records := range matches {
 		views := buyerViews[buyerID]
+		demand := buyerDemand[buyerID]
 		if len(views) == 0 {
 			rings = append(rings, &Ring{
 				Name:   buyerID,
 				Groups: []Group{makeGroup(records)},
+				Demand: demand,
 			})
 			continue
 		}
@@ -351,6 +353,7 @@ func genRings(matches rsdmatch.Matches, buyerViews map[string][]string) RingSet 
 			rings = append(rings, &Ring{
 				Name:   view,
 				Groups: []Group{makeGroup(records)},
+				Demand: demand,
 			})
 		}
 	}

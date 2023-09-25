@@ -218,6 +218,7 @@ func writeRings(file string, rings []*bw.Ring) error {
 				group.NodesWeight[i] /= 8
 			}
 		}
+		ring.Demand /= 8
 	}
 
 	var buf bytes.Buffer
