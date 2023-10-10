@@ -26,13 +26,15 @@ type View struct {
 }
 
 type ViewOption struct {
-	EnoughNodeCount   int     `json:"ecn"`
-	RemoteAccessScore float32 `json:"ras"`
-	RejectScore       float32 `json:"rjs"`
-	RemoteAccessLimit float32 `json:"ral"`  // 0.0-1.0
-	ScoreSensitivity  float32 `json:"sens"` // use DefaultViewOption.ScoreSensitivity when <= 0.0
+	// Score rules: https://pkg.go.dev/github.com/someonegg/rsdmatch/distscore/china#DistScoreOf
 
-	ExclusiveMode bool `json:"exclusive"`
+	EnoughNodeCount   int     `json:"ecn"`  // specify the enough node count for a view.
+	RemoteAccessScore float32 `json:"ras"`  // specify the remote access score [20.0-80.0].
+	RejectScore       float32 `json:"rjs"`  // specify the reject score [80.0-100.0].
+	RemoteAccessLimit float32 `json:"ral"`  // specify the remote access ratio limit [0.0-1.0].
+	ScoreSensitivity  float32 `json:"sens"` // use DefaultViewOption.ScoreSensitivity when <= 0.0.
+
+	ExclusiveMode bool `json:"exclusive"` // a node will only be assigned to one view.
 
 	NodeFilter func(*Node, *View) bool `json:"-"` // can be nil
 }

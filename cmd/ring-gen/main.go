@@ -80,7 +80,7 @@ var createCmd = &cli.Command{
 			Name:     "ral",
 			Required: false,
 			Value:    0.1,
-			Usage:    "specify the remote access limit [0.0-1.0]",
+			Usage:    "specify the remote access ratio limit [0.0-1.0]",
 		},
 		&cli.BoolFlag{
 			Name:     "region",
