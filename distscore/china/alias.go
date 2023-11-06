@@ -92,6 +92,7 @@ func init() {
 	}
 }
 
+// UnifyLocation : ignore proxy and regionMode when server.
 func UnifyLocation(server bool, l Location, proxy, regionMode bool) Location {
 	if isASCII(l.ISP) {
 		l.ISP = strings.ToLower(l.ISP)

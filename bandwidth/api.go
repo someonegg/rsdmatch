@@ -27,7 +27,7 @@ type View struct {
 
 type ViewOption struct {
 	// Score rules: https://pkg.go.dev/github.com/someonegg/rsdmatch/distscore/china#DistScoreOf
-
+	//
 	EnoughNodeCount   int     `json:"ecn"`  // specify the enough node count for a view.
 	RemoteAccessScore float32 `json:"ras"`  // specify the remote access score [20.0-80.0].
 	RejectScore       float32 `json:"rjs"`  // specify the reject score [80.0-100.0].

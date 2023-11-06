@@ -74,11 +74,12 @@ func init() {
 	}
 }
 
-var normalMap, centralMap map[string]bool
+var normalMap, centralMap, frontierMap map[string]bool
 
 func init() {
 	normalMap = make(map[string]bool)
 	centralMap = make(map[string]bool)
+	frontierMap = make(map[string]bool)
 
 	centrals := []string{"北京", "天津", "河北", "山西", "山东", "河南", "湖北", "湖南",
 		"江苏", "安徽", "浙江", "江西", "福建", "上海", "广东", "广西", "中国"}
@@ -87,9 +88,14 @@ func init() {
 		centralMap[province] = true
 	}
 
-	normals := []string{"辽宁", "陕西", "甘肃", "四川", "重庆", "贵州"}
+	normals := []string{"辽宁", "陕西", "四川", "重庆", "贵州"}
 	for _, province := range normals {
 		normalMap[province] = true
+	}
+
+	frontiers := []string{"新疆", "西藏"}
+	for _, province := range frontiers {
+		frontierMap[province] = true
 	}
 }
 
@@ -99,46 +105,48 @@ func init() {
 //	ISP_Region: 20
 //	ISP_AdjacentRegion: 30
 //	ISP_Central: 40
-//	Province: 50, !(xinJiang || xiZang)
-//	Region: 60, !(xinJiang || xiZang)
+//	ISP_Normal: 50
+//	ISP_!Frontier: 60
 //	ISP: 70
-//	AdjacentRegion: 80
-//	Other: 90
+//	Province_Normal: 60
+//	Other: 80
 func DistScoreOf(client, server Location, proxy, regionMode bool) (score float32, local bool) {
-	a, b := UnifyLocation(false, client, proxy, regionMode), UnifyLocation(true, server, proxy, regionMode)
-	rA, rB := regionMap[a.Province], regionMap[b.Province]
-	sameRegion := rA == rB
+	c, s := UnifyLocation(false, client, proxy, regionMode), UnifyLocation(true, server, proxy, regionMode)
+	cR, sR := regionMap[c.Province], regionMap[s.Province]
 
-	if a.ISP == b.ISP {
-		if a.Province == b.Province {
+	if c.ISP == s.ISP {
+		if c.Province == s.Province {
 			score = 10.0
 			local = true
 			return
 		}
 
-		if sameRegion {
+		if cR == sR {
 			score = 20.0
 			return
 		}
 
-		if normalMap[b.Province] {
-			for _, r := range regionNeighbors[rA] {
-				if rB == r {
+		if normalMap[s.Province] {
+			for _, r := range regionNeighbors[cR] {
+				if sR == r {
 					score = 30.0
 					return
 				}
 			}
 		}
 
-		if centralMap[b.Province] {
-			if centralMap[a.Province] {
-				score = 40.0
-				return
-			}
+		if centralMap[s.Province] {
+			score = 40.0
+			return
 		}
 
-		if normalMap[b.Province] {
+		if normalMap[s.Province] {
 			score = 50.0
+			return
+		}
+
+		if !frontierMap[s.Province] {
+			score = 60.0
 			return
 		}
 
@@ -146,30 +154,14 @@ func DistScoreOf(client, server Location, proxy, regionMode bool) (score float32
 		return
 	}
 
-	inFrontier := func(r int) bool {
-		return r == unknown || r == xinJiang || r == xiZang
-	}
-
-	if !(inFrontier(rA) || inFrontier(rB)) {
-		if a.Province == b.Province {
-			score = 50.0
-			return
-		}
-
-		if sameRegion {
+	if normalMap[s.Province] {
+		if c.Province == s.Province {
 			score = 60.0
 			return
 		}
 	}
 
-	for _, r := range regionNeighbors[rA] {
-		if rB == r {
-			score = 80.0
-			return
-		}
-	}
-
-	score = 90.0
+	score = 80.0
 	return
 }
 
@@ -179,4 +171,8 @@ func InNormal(l Location) bool {
 
 func InCentral(l Location) bool {
 	return centralMap[UnifyLocation(false, l, false, false).Province]
+}
+
+func InFrontier(l Location) bool {
+	return frontierMap[UnifyLocation(false, l, false, false).Province]
 }
