@@ -105,8 +105,8 @@ func init() {
 //	ISP_Region: 20
 //	ISP_AdjacentRegion: 30
 //	ISP_Central: 40
-//	ISP_Normal: 50
-//	ISP_!Frontier: 60
+//	ISP_ServerNormal: 50
+//	ISP_!ServerFrontier: 60
 //	ISP: 70
 //	Province_Normal: 60
 //	Other: 80
@@ -135,7 +135,7 @@ func DistScoreOf(client, server Location, proxy, regionMode bool) (score float32
 			}
 		}
 
-		if centralMap[s.Province] {
+		if centralMap[c.Province] && centralMap[s.Province] {
 			score = 40.0
 			return
 		}
