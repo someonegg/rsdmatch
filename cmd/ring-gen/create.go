@@ -36,7 +36,7 @@ type Rings struct {
 func doCreate(ctx context.Context, total, scale float64,
 	nodeFile, viewFile, ringFile string,
 	ecn int, ras, rjs float32, ral float32,
-	regionMode, distMode, storageMode, verbose bool) error {
+	regionMode, distMode, storageMode, exclusiveMode, verbose bool) error {
 
 	autoScale := false
 	if scale <= 0.0 {
@@ -46,13 +46,11 @@ func doCreate(ctx context.Context, total, scale float64,
 
 	autoMergeView := true
 	locationProxy := true
-	exclusiveMode := false
 
 	if distMode {
 		regionMode = false
 		autoMergeView = false
 		locationProxy = false
-		exclusiveMode = true
 	}
 
 	nodes, err := loadNodes(nodeFile, storageMode)
@@ -102,7 +100,6 @@ func doCreate(ctx context.Context, total, scale float64,
 
 	if ispMode {
 		fmt.Println("isp mode")
-		viewSet.Option.RemoteAccessLimit = 0.0
 		viewSet.Option.ScoreSensitivity = 50.0
 		viewSet.Option.NodeFilter = func(n *bw.Node, v *bw.View) bool {
 			return !n.LocalOnly

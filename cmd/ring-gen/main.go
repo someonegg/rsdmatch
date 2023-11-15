@@ -101,6 +101,12 @@ var createCmd = &cli.Command{
 			Usage:    "allocate storage not bandwidth",
 		},
 		&cli.BoolFlag{
+			Name:     "exclusive",
+			Required: false,
+			Value:    false,
+			Usage:    "allocate exclusively",
+		},
+		&cli.BoolFlag{
 			Name:     "vv",
 			Required: false,
 			Value:    false,
@@ -109,19 +115,20 @@ var createCmd = &cli.Command{
 	},
 	Action: func(ctx *cli.Context) error {
 		var (
-			bw          = ctx.Float64("bw")
-			scale       = ctx.Float64("scale")
-			nodeFile    = ctx.String("node")
-			viewFile    = ctx.String("view")
-			ringFile    = ctx.String("ring")
-			ecn         = ctx.Int("ecn")
-			ras         = float32(ctx.Float64("ras"))
-			rjs         = float32(ctx.Float64("rjs"))
-			ral         = float32(ctx.Float64("ral"))
-			regionMode  = ctx.Bool("region")
-			distMode    = ctx.Bool("dist")
-			storageMode = ctx.Bool("storage")
-			verbose     = ctx.Bool("vv")
+			bw            = ctx.Float64("bw")
+			scale         = ctx.Float64("scale")
+			nodeFile      = ctx.String("node")
+			viewFile      = ctx.String("view")
+			ringFile      = ctx.String("ring")
+			ecn           = ctx.Int("ecn")
+			ras           = float32(ctx.Float64("ras"))
+			rjs           = float32(ctx.Float64("rjs"))
+			ral           = float32(ctx.Float64("ral"))
+			regionMode    = ctx.Bool("region")
+			distMode      = ctx.Bool("dist")
+			storageMode   = ctx.Bool("storage")
+			exclusiveMode = ctx.Bool("exclusive")
+			verbose       = ctx.Bool("vv")
 		)
 		if bw <= 0 {
 			return errors.New("invalid bw")
@@ -138,6 +145,6 @@ var createCmd = &cli.Command{
 		return doCreate(
 			ctx.Context, bw, scale,
 			nodeFile, viewFile, ringFile,
-			ecn, ras, rjs, ral, regionMode, distMode, storageMode, verbose)
+			ecn, ras, rjs, ral, regionMode, distMode, storageMode, exclusiveMode, verbose)
 	},
 }
