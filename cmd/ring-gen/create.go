@@ -95,7 +95,6 @@ func doCreate(ctx context.Context, total, scale float64,
 
 	if regionMode {
 		fmt.Println("region mode")
-		viewSet.Option.ScoreSensitivity = 30.0
 	}
 
 	if ispMode {
