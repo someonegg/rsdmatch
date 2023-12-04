@@ -31,17 +31,19 @@ type affinityTable struct {
 	rjs float32
 	ral float32
 
+	scorer DistScorer
 	filter func(*Node, *View) bool
 
 	proxy      bool
 	regionMode bool
 }
 
-func newAffinityTable(o *ViewOption, proxy, regionMode bool) rsdmatch.AffinityTable {
+func newAffinityTable(o *ViewOption, scorer DistScorer, proxy, regionMode bool) rsdmatch.AffinityTable {
 	return &affinityTable{
 		ras:        o.RemoteAccessScore,
 		rjs:        o.RejectScore,
 		ral:        o.RemoteAccessLimit,
+		scorer:     scorer,
 		filter:     o.NodeFilter,
 		proxy:      proxy,
 		regionMode: regionMode,
@@ -56,6 +58,15 @@ func (t *affinityTable) Find(supplier *rsdmatch.Supplier, buyer *rsdmatch.Buyer)
 		china.Location{ISP: view.ISP, Province: view.Province},
 		china.Location{ISP: node.ISP, Province: node.Province},
 		t.proxy, t.regionMode)
+	if t.scorer != nil {
+		ok, score1, local1 := t.scorer.DistScore(
+			china.Location{ISP: view.ISP, Province: view.Province},
+			china.Location{ISP: node.ISP, Province: node.Province},
+		)
+		if ok {
+			score, local = score1, local1
+		}
+	}
 	// filter
 	if t.filter != nil && !t.filter(node, view) {
 		return rsdmatch.Affinity{
@@ -153,7 +164,7 @@ func (m *Matcher) Match(nodes NodeSet, viewss []ViewSet) (ringss []RingSet, summ
 
 		matches, _ := rsdmatch.GreedyMatcher(buyers.Option.ScoreSensitivity,
 			buyers.Option.EnoughNodeCount, buyers.Option.ExclusiveMode, m.Verbose).Match(
-			suppliers.Elems, buyers.Elems, newAffinityTable(buyers.Option, m.LocationProxy, m.AggregateRegion))
+			suppliers.Elems, buyers.Elems, newAffinityTable(buyers.Option, m.DistScorer, m.LocationProxy, m.AggregateRegion))
 		if m.Verbose {
 			fmt.Println()
 		}

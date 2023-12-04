@@ -5,6 +5,8 @@
 // Package bandwidth uses rdsmatch to match bandwidth.
 package bandwidth
 
+import "github.com/someonegg/rsdmatch/distscore/china"
+
 type Node struct {
 	Node      string  `json:"node"`
 	ISP       string  `json:"isp"`
@@ -80,6 +82,13 @@ type Matcher struct {
 	AggregateRegion bool `json:"ar"`
 
 	Verbose bool `json:"vv"`
+
+	DistScorer DistScorer // use distscore/china when nil.
+}
+
+type DistScorer interface {
+	// use distscore/china when !ok.
+	DistScore(client, server china.Location) (ok bool, score float32, local bool)
 }
 
 type Summary struct {
