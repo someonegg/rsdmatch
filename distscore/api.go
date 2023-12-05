@@ -10,7 +10,11 @@ type Location struct {
 }
 
 type LocationUnifier interface {
-	UnifyLocation(l Location, server bool) Location
+	Unify(l Location, server bool) Location
+
+	InNormal(l Location) bool
+	InCentral(l Location) bool
+	InFrontier(l Location) bool
 }
 
 type DistScorer interface {

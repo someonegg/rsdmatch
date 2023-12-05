@@ -119,6 +119,43 @@ func UnifyLocation(l Location, server bool, proxyMunici, proxyRegion bool) Locat
 	return l
 }
 
+func InNormal(l Location) bool {
+	return normalMap[UnifyLocation(l, false, false, false).Province]
+}
+
+func InCentral(l Location) bool {
+	return centralMap[UnifyLocation(l, false, false, false).Province]
+}
+
+func InFrontier(l Location) bool {
+	return frontierMap[UnifyLocation(l, false, false, false).Province]
+}
+
+type locationUnifier struct {
+	proxyMunici bool
+	proxyRegion bool
+}
+
+func (u locationUnifier) Unify(l Location, server bool) Location {
+	return UnifyLocation(l, server, u.proxyMunici, u.proxyRegion)
+}
+
+func (u locationUnifier) InNormal(l Location) bool {
+	return InNormal(l)
+}
+
+func (u locationUnifier) InCentral(l Location) bool {
+	return InCentral(l)
+}
+
+func (u locationUnifier) InFrontier(l Location) bool {
+	return InFrontier(l)
+}
+
+func NewLocationUnifier(proxyMunici, proxyRegion bool) LocationUnifier {
+	return locationUnifier{proxyMunici, proxyRegion}
+}
+
 func isASCII(s string) bool {
 	for i := 0; i < len(s); i++ {
 		c := s[i]
@@ -127,17 +164,4 @@ func isASCII(s string) bool {
 		}
 	}
 	return true
-}
-
-type locationUnifier struct {
-	proxyMunici bool
-	proxyRegion bool
-}
-
-func (u locationUnifier) UnifyLocation(l Location, server bool) Location {
-	return UnifyLocation(l, server, u.proxyMunici, u.proxyRegion)
-}
-
-func NewLocationUnifier(proxyMunici, proxyRegion bool) LocationUnifier {
-	return locationUnifier{proxyMunici, proxyRegion}
 }

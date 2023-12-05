@@ -162,18 +162,6 @@ func DistScore(client, server Location) (score float32, local bool) {
 	return
 }
 
-func InNormal(l Location) bool {
-	return normalMap[l.Province]
-}
-
-func InCentral(l Location) bool {
-	return centralMap[l.Province]
-}
-
-func InFrontier(l Location) bool {
-	return frontierMap[l.Province]
-}
-
 type distScorer struct{}
 
 func (s distScorer) DistScore(client, server Location) (score float32, local bool) {

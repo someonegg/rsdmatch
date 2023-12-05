@@ -53,8 +53,8 @@ func (t *affinityTable) Find(supplier *rsdmatch.Supplier, buyer *rsdmatch.Buyer)
 	view := buyer.Info.(*View)
 
 	score, local := t.scorer.DistScore(
-		t.unifier.UnifyLocation(ds.Location{ISP: view.ISP, Province: view.Province}, false),
-		t.unifier.UnifyLocation(ds.Location{ISP: node.ISP, Province: node.Province}, true))
+		t.unifier.Unify(ds.Location{ISP: view.ISP, Province: view.Province}, false),
+		t.unifier.Unify(ds.Location{ISP: node.ISP, Province: node.Province}, true))
 	// filter
 	if t.filter != nil && !t.filter(node, view) {
 		return rsdmatch.Affinity{
@@ -227,7 +227,7 @@ func genSuppliers(unifier ds.LocationUnifier, nodes NodeSet) (supplierSet, int, 
 	suppliers := make([]rsdmatch.Supplier, len(nodes.Elems))
 
 	for i, node := range nodes.Elems {
-		location := unifier.UnifyLocation(ds.Location{ISP: node.ISP, Province: node.Province}, true)
+		location := unifier.Unify(ds.Location{ISP: node.ISP, Province: node.Province}, true)
 		suppliers[i].ID = node.Node
 		suppliers[i].Cap = int64(math.Floor(node.Bandwidth * float64(1000/bwUnit)))
 		if node.ISP == "" || node.Province == "" {
@@ -237,7 +237,7 @@ func genSuppliers(unifier ds.LocationUnifier, nodes NodeSet) (supplierSet, int, 
 		suppliers[i].CapRest = suppliers[i].Cap
 		suppliers[i].Priority = int64(node.Priority*1000) + 1
 		suppliers[i].Info = node
-		if china.InCentral(ds.Location{ISP: node.ISP, Province: node.Province}) {
+		if unifier.InCentral(ds.Location{ISP: node.ISP, Province: node.Province}) {
 			ispBW[location.ISP] += suppliers[i].Cap
 		}
 	}
@@ -264,7 +264,7 @@ func genBuyerss(unifier ds.LocationUnifier, viewss []ViewSet, ispScale map[strin
 		buyers := make([]rsdmatch.Buyer, len(views.Elems))
 
 		for i, view := range views.Elems {
-			location := unifier.UnifyLocation(ds.Location{ISP: view.ISP, Province: view.Province}, false)
+			location := unifier.Unify(ds.Location{ISP: view.ISP, Province: view.Province}, false)
 			buyers[i].ID = view.View
 			scale := 1.0
 			if s, ok := ispScale[location.ISP]; ok {
@@ -273,7 +273,7 @@ func genBuyerss(unifier ds.LocationUnifier, viewss []ViewSet, ispScale map[strin
 			buyers[i].Demand = int64(math.Ceil(view.Bandwidth * scale * float64(1000/bwUnit)))
 			buyers[i].DemandRest = buyers[i].Demand
 			buyers[i].Info = view
-			if china.InCentral(ds.Location{ISP: view.ISP, Province: view.Province}) {
+			if unifier.InCentral(ds.Location{ISP: view.ISP, Province: view.Province}) {
 				ispBW[location.ISP] += buyers[i].Demand
 			}
 		}
@@ -303,7 +303,7 @@ func mergeBuyers(unifier ds.LocationUnifier, raws []rsdmatch.Buyer) (merged []rs
 	next := 0
 	for _, buyer := range raws {
 		view := buyer.Info.(*View)
-		location := unifier.UnifyLocation(ds.Location{ISP: view.ISP, Province: view.Province}, false)
+		location := unifier.Unify(ds.Location{ISP: view.ISP, Province: view.Province}, false)
 		buyerID := location.Province + "-" + location.ISP
 		if idx, ok := indexes[buyerID]; ok {
 			merged[idx].Demand += buyer.Demand
