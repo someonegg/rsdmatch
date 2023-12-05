@@ -4,10 +4,7 @@
 
 package china
 
-type Location struct {
-	ISP      string
-	Province string
-}
+import . "github.com/someonegg/rsdmatch/distscore"
 
 const (
 	unknown = iota
@@ -99,7 +96,7 @@ func init() {
 	}
 }
 
-// DistScoreOf rules:
+// DistScore rules:
 //
 //	ISP_Province: 10
 //	ISP_Region: 20
@@ -110,8 +107,8 @@ func init() {
 //	ISP: 70
 //	Province_Normal: 60
 //	Other: 80
-func DistScoreOf(client, server Location, proxy, regionMode bool) (score float32, local bool) {
-	c, s := UnifyLocation(false, client, proxy, regionMode), UnifyLocation(true, server, proxy, regionMode)
+func DistScore(client, server Location) (score float32, local bool) {
+	c, s := client, server
 	cR, sR := regionMap[c.Province], regionMap[s.Province]
 
 	if c.ISP == s.ISP {
@@ -166,13 +163,23 @@ func DistScoreOf(client, server Location, proxy, regionMode bool) (score float32
 }
 
 func InNormal(l Location) bool {
-	return normalMap[UnifyLocation(false, l, false, false).Province]
+	return normalMap[l.Province]
 }
 
 func InCentral(l Location) bool {
-	return centralMap[UnifyLocation(false, l, false, false).Province]
+	return centralMap[l.Province]
 }
 
 func InFrontier(l Location) bool {
-	return frontierMap[UnifyLocation(false, l, false, false).Province]
+	return frontierMap[l.Province]
+}
+
+type distScorer struct{}
+
+func (s distScorer) DistScore(client, server Location) (score float32, local bool) {
+	return DistScore(client, server)
+}
+
+func NewDistScorer() DistScorer {
+	return distScorer{}
 }

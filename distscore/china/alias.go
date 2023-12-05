@@ -7,14 +7,16 @@ package china
 import (
 	"strings"
 	"unicode/utf8"
+
+	. "github.com/someonegg/rsdmatch/distscore"
 )
 
 var (
 	ispAlias      map[string]string
-	ispProxy      map[string]string
 	provinceAlias map[string]string
-	provinceProxy map[string]string
-	regionProxy   map[string]string
+
+	municiProxy map[string]string
+	regionProxy map[string]string
 )
 
 func init() {
@@ -32,8 +34,6 @@ func init() {
 			ispAlias[a] = p
 		}
 	}
-
-	ispProxy = map[string]string{}
 
 	provinces := map[string][]string{
 		"安徽":  {"安徽省", "anhui", "ah"},
@@ -82,7 +82,7 @@ func init() {
 		}
 	}
 
-	provinceProxy = map[string]string{
+	municiProxy = map[string]string{
 		"北京": "河北",
 		"天津": "河北",
 		"上海": "江苏",
@@ -92,15 +92,12 @@ func init() {
 	}
 }
 
-// UnifyLocation : ignore proxy and regionMode when server.
-func UnifyLocation(server bool, l Location, proxy, regionMode bool) Location {
+// UnifyLocation : ignore proxyMunici and proxyRegion when server && !InNormal.
+func UnifyLocation(l Location, server bool, proxyMunici, proxyRegion bool) Location {
 	if isASCII(l.ISP) {
 		l.ISP = strings.ToLower(l.ISP)
 	}
 	if o, ok := ispAlias[l.ISP]; ok {
-		l.ISP = o
-	}
-	if o, ok := ispProxy[l.ISP]; proxy && ok {
 		l.ISP = o
 	}
 	if isASCII(l.Province) {
@@ -110,13 +107,13 @@ func UnifyLocation(server bool, l Location, proxy, regionMode bool) Location {
 		l.Province = o
 	}
 	if server && !normalMap[l.Province] {
-		proxy = false
-		regionMode = false
+		proxyMunici = false
+		proxyRegion = false
 	}
-	if o, ok := provinceProxy[l.Province]; proxy && ok {
+	if o, ok := municiProxy[l.Province]; proxyMunici && ok {
 		l.Province = o
 	}
-	if o, ok := regionProxy[l.Province]; regionMode && ok {
+	if o, ok := regionProxy[l.Province]; proxyRegion && ok {
 		l.Province = o
 	}
 	return l
@@ -130,4 +127,17 @@ func isASCII(s string) bool {
 		}
 	}
 	return true
+}
+
+type locationUnifier struct {
+	proxyMunici bool
+	proxyRegion bool
+}
+
+func (u locationUnifier) UnifyLocation(l Location, server bool) Location {
+	return UnifyLocation(l, server, u.proxyMunici, u.proxyRegion)
+}
+
+func NewLocationUnifier(proxyMunici, proxyRegion bool) LocationUnifier {
+	return locationUnifier{proxyMunici, proxyRegion}
 }
