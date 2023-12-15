@@ -76,15 +76,16 @@ type Matcher struct {
 	// Merge views with the same location.
 	AutoMergeView bool `json:"amv"`
 
-	Unifier distscore.LocationUnifier
 	// When Unifier is nil, use
 	// https://pkg.go.dev/github.com/someonegg/rsdmatch/distscore/china#UnifyLocation
-	LocationProxy   bool `json:"lp"` // china.UnifyLocation - proxyMunici
-	AggregateRegion bool `json:"ar"` // china.UnifyLocation - proxyRegion
+	Unifier distscore.LocationUnifier
+	// china.UnifyLocation
+	LocationProxy   bool `json:"lp"` // proxyMunici
+	AggregateRegion bool `json:"ar"` // proxyRegion
 
-	Scorer distscore.DistScorer
 	// When Scorer is nil, use
 	// https://pkg.go.dev/github.com/someonegg/rsdmatch/distscore/china#DistScore
+	Scorer distscore.DistScorer
 
 	Verbose bool `json:"vv"`
 }
