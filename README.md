@@ -7,6 +7,7 @@ Documentation
 -------------
 
 - [API Reference](http://godoc.org/github.com/someonegg/rsdmatch)
+- [API Reference for bandwidth](http://godoc.org/github.com/someonegg/rsdmatch/bandwidth)
 
 Installation
 ------------
