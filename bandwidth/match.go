@@ -237,7 +237,7 @@ func genSuppliers(unifier ds.LocationUnifier, nodes NodeSet) (supplierSet, int, 
 		suppliers[i].CapRest = suppliers[i].Cap
 		suppliers[i].Priority = int64(node.Priority*1000) + 1
 		suppliers[i].Info = node
-		if unifier.InCentral(ds.Location{ISP: node.ISP, Province: node.Province}) {
+		if unifier.IsDeputy(ds.Location{ISP: node.ISP, Province: node.Province}) {
 			ispBW[location.ISP] += suppliers[i].Cap
 		}
 	}
@@ -273,7 +273,7 @@ func genBuyerss(unifier ds.LocationUnifier, viewss []ViewSet, ispScale map[strin
 			buyers[i].Demand = int64(math.Ceil(view.Bandwidth * scale * float64(1000/bwUnit)))
 			buyers[i].DemandRest = buyers[i].Demand
 			buyers[i].Info = view
-			if unifier.InCentral(ds.Location{ISP: view.ISP, Province: view.Province}) {
+			if unifier.IsDeputy(ds.Location{ISP: view.ISP, Province: view.Province}) {
 				ispBW[location.ISP] += buyers[i].Demand
 			}
 		}

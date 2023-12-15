@@ -140,16 +140,8 @@ func (u locationUnifier) Unify(l Location, server bool) Location {
 	return UnifyLocation(l, server, u.proxyMunici, u.proxyRegion)
 }
 
-func (u locationUnifier) InNormal(l Location) bool {
-	return InNormal(l)
-}
-
-func (u locationUnifier) InCentral(l Location) bool {
+func (u locationUnifier) IsDeputy(l Location) bool {
 	return InCentral(l)
-}
-
-func (u locationUnifier) InFrontier(l Location) bool {
-	return InFrontier(l)
 }
 
 func NewLocationUnifier(proxyMunici, proxyRegion bool) LocationUnifier {
