@@ -63,7 +63,7 @@ func doCreate(ctx context.Context, total, scale float64,
 		return fmt.Errorf("load view file failed: %w", err)
 	}
 
-	autoScaleMin, autoScaleMax := 0.5, 2.0
+	autoScaleMin, autoScaleMax := 1.0, 10.0
 
 	matcher := &bw.Matcher{
 		AutoScale:       autoScale,
@@ -91,6 +91,7 @@ func doCreate(ctx context.Context, total, scale float64,
 	if distMode {
 		fmt.Println("dist mode")
 		mergeByDist(viewSet.Elems)
+		viewSet.Option.ScoreSensitivity = 25.0
 	}
 
 	if regionMode {
