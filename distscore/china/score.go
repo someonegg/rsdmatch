@@ -21,6 +21,7 @@ const (
 	taiWan
 	hkmo
 	cn
+	huaZhong
 )
 
 var regionNeighbors = map[int][]int{
@@ -35,6 +36,7 @@ var regionNeighbors = map[int][]int{
 }
 
 var regionMap map[string]int
+var regionMapT map[string]int // traditional
 
 func init() {
 	regions := map[int][]string{
@@ -67,6 +69,28 @@ func init() {
 		}
 		for i := 1; i < len(provinces); i++ {
 			regionProxy[provinces[i]] = provinces[0]
+		}
+	}
+
+	regionsT := map[int][]string{
+		dongBei:  {"辽宁", "吉林", "黑龙江"},
+		huaBei:   {"河北", "北京", "天津", "山西", "内蒙古"},
+		huaZhong: {"河南", "湖北", "湖南"},
+		huaDong:  {"山东", "江苏", "安徽", "浙江", "江西", "福建", "上海"},
+		huaNan:   {"广东", "广西", "海南"},
+		xiBei:    {"陕西", "宁夏", "甘肃", "青海"},
+		xiNan:    {"四川", "云南", "贵州", "重庆"},
+		xinJiang: {"新疆"},
+		xiZang:   {"西藏"},
+		taiWan:   {"台湾"},
+		hkmo:     {"香港", "澳门"},
+		cn:       {"中国"},
+	}
+
+	regionMapT = make(map[string]int)
+	for region, provinces := range regionsT {
+		for _, province := range provinces {
+			regionMapT[province] = region
 		}
 	}
 }
@@ -110,6 +134,7 @@ func init() {
 func DistScore(client, server Location) (score float32, local bool) {
 	c, s := client, server
 	cR, sR := regionMap[c.Province], regionMap[s.Province]
+	cRT, sRT := regionMapT[c.Province], regionMapT[s.Province]
 
 	if c.ISP == s.ISP {
 		if c.Province == s.Province {
@@ -118,7 +143,7 @@ func DistScore(client, server Location) (score float32, local bool) {
 			return
 		}
 
-		if cR == sR {
+		if cR == sR || cRT == sRT {
 			score = 20.0
 			return
 		}
