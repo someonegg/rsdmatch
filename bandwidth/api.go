@@ -80,8 +80,7 @@ type Matcher struct {
 	// https://pkg.go.dev/github.com/someonegg/rsdmatch/distscore/china#UnifyLocation
 	Unifier distscore.LocationUnifier
 	// china.UnifyLocation
-	LocationProxy   bool `json:"lp"` // proxyMunici
-	AggregateRegion bool `json:"ar"` // proxyRegion
+	ProxyMunici bool `json:"pm"`
 
 	// When Scorer is nil, use
 	// https://pkg.go.dev/github.com/someonegg/rsdmatch/distscore/china#DistScore

@@ -83,12 +83,6 @@ var createCmd = &cli.Command{
 			Usage:    "specify the remote access ratio limit [0.0-1.0]",
 		},
 		&cli.BoolFlag{
-			Name:     "region",
-			Required: false,
-			Value:    false,
-			Usage:    "aggregate region",
-		},
-		&cli.BoolFlag{
 			Name:     "dist",
 			Required: false,
 			Value:    false,
@@ -124,7 +118,6 @@ var createCmd = &cli.Command{
 			ras           = float32(ctx.Float64("ras"))
 			rjs           = float32(ctx.Float64("rjs"))
 			ral           = float32(ctx.Float64("ral"))
-			regionMode    = ctx.Bool("region")
 			distMode      = ctx.Bool("dist")
 			storageMode   = ctx.Bool("storage")
 			exclusiveMode = ctx.Bool("exclusive")
@@ -145,6 +138,7 @@ var createCmd = &cli.Command{
 		return doCreate(
 			ctx.Context, bw, scale,
 			nodeFile, viewFile, ringFile,
-			ecn, ras, rjs, ral, regionMode, distMode, storageMode, exclusiveMode, verbose)
+			ecn, ras, rjs, ral,
+			distMode, storageMode, exclusiveMode, verbose)
 	},
 }

@@ -88,12 +88,10 @@ func init() {
 		"上海": "江苏",
 		"重庆": "四川",
 		"宁夏": "甘肃",
-		"海南": "广东",
 	}
 }
 
-// UnifyLocation : ignore proxyMunici and proxyRegion when server && !InNormal.
-func UnifyLocation(l Location, server bool, proxyMunici, proxyRegion bool) Location {
+func UnifyLocation(l Location, server bool, proxyMunici bool) Location {
 	if isASCII(l.ISP) {
 		l.ISP = strings.ToLower(l.ISP)
 	}
@@ -106,46 +104,38 @@ func UnifyLocation(l Location, server bool, proxyMunici, proxyRegion bool) Locat
 	if o, ok := provinceAlias[l.Province]; ok {
 		l.Province = o
 	}
-	if server && !normalMap[l.Province] {
-		proxyMunici = false
-		proxyRegion = false
-	}
 	if o, ok := municiProxy[l.Province]; proxyMunici && ok {
-		l.Province = o
-	}
-	if o, ok := regionProxy[l.Province]; proxyRegion && ok {
 		l.Province = o
 	}
 	return l
 }
 
 func InNormal(l Location) bool {
-	return normalMap[UnifyLocation(l, false, false, false).Province]
+	return normalMap[UnifyLocation(l, false, false).Province]
 }
 
 func InCentral(l Location) bool {
-	return centralMap[UnifyLocation(l, false, false, false).Province]
+	return centralMap[UnifyLocation(l, false, false).Province]
 }
 
 func InFrontier(l Location) bool {
-	return frontierMap[UnifyLocation(l, false, false, false).Province]
+	return frontierMap[UnifyLocation(l, false, false).Province]
 }
 
 type locationUnifier struct {
 	proxyMunici bool
-	proxyRegion bool
 }
 
 func (u locationUnifier) Unify(l Location, server bool) Location {
-	return UnifyLocation(l, server, u.proxyMunici, u.proxyRegion)
+	return UnifyLocation(l, server, u.proxyMunici)
 }
 
 func (u locationUnifier) IsDeputy(l Location) bool {
 	return InCentral(l)
 }
 
-func NewLocationUnifier(proxyMunici, proxyRegion bool) LocationUnifier {
-	return locationUnifier{proxyMunici, proxyRegion}
+func NewLocationUnifier(proxyMunici bool) LocationUnifier {
+	return locationUnifier{proxyMunici}
 }
 
 func isASCII(s string) bool {

@@ -98,7 +98,7 @@ func (p nodePercentLimit) Calculate(supplierCap, buyerDemand int64) int64 {
 
 func (m *Matcher) Match(nodes NodeSet, viewss []ViewSet) (ringss []RingSet, summ Summary) {
 	if m.Unifier == nil {
-		m.Unifier = china.NewLocationUnifier(m.LocationProxy, m.AggregateRegion)
+		m.Unifier = china.NewLocationUnifier(m.ProxyMunici)
 	}
 	if m.Scorer == nil {
 		m.Scorer = china.NewDistScorer()

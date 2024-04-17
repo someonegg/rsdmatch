@@ -36,7 +36,7 @@ type Rings struct {
 func doCreate(ctx context.Context, total, scale float64,
 	nodeFile, viewFile, ringFile string,
 	ecn int, ras, rjs float32, ral float32,
-	regionMode, distMode, storageMode, exclusiveMode, verbose bool) error {
+	distMode, storageMode, exclusiveMode, verbose bool) error {
 
 	autoScale := false
 	if scale <= 0.0 {
@@ -45,12 +45,11 @@ func doCreate(ctx context.Context, total, scale float64,
 	}
 
 	autoMergeView := true
-	locationProxy := true
+	proxyMunici := true
 
 	if distMode {
-		regionMode = false
 		autoMergeView = false
-		locationProxy = false
+		proxyMunici = false
 	}
 
 	nodes, err := loadNodes(nodeFile, storageMode)
@@ -66,13 +65,12 @@ func doCreate(ctx context.Context, total, scale float64,
 	autoScaleMin, autoScaleMax := 1.0, 10.0
 
 	matcher := &bw.Matcher{
-		AutoScale:       autoScale,
-		AutoScaleMin:    &autoScaleMin,
-		AutoScaleMax:    &autoScaleMax,
-		AutoMergeView:   autoMergeView,
-		LocationProxy:   locationProxy,
-		AggregateRegion: regionMode,
-		Verbose:         verbose,
+		AutoScale:     autoScale,
+		AutoScaleMin:  &autoScaleMin,
+		AutoScaleMax:  &autoScaleMax,
+		AutoMergeView: autoMergeView,
+		ProxyMunici:   proxyMunici,
+		Verbose:       verbose,
 	}
 
 	nodeSet := bw.NodeSet{Elems: nodes}
@@ -92,10 +90,6 @@ func doCreate(ctx context.Context, total, scale float64,
 		fmt.Println("dist mode")
 		mergeByDist(viewSet.Elems)
 		viewSet.Option.ScoreSensitivity = 25.0
-	}
-
-	if regionMode {
-		fmt.Println("region mode")
 	}
 
 	if ispMode {
