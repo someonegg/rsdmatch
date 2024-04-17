@@ -13,13 +13,15 @@ import (
 
 type greedyMatcher struct {
 	sens      float32
+	bottom    float32
 	enough    int
 	exclusive bool
 	verbose   bool
 }
 
-func GreedyMatcher(priceSensitivity float32, enoughSupplierCount int, exclusive, verbose bool) Matcher {
-	return greedyMatcher{priceSensitivity, enoughSupplierCount, exclusive, verbose}
+// GreedyMatcher : buy all(price <= priceBottom) when !exclusive
+func GreedyMatcher(priceSensitivity, priceBottom float32, enoughSupplierCount int, exclusive, verbose bool) Matcher {
+	return greedyMatcher{priceSensitivity, priceBottom, enoughSupplierCount, exclusive, verbose}
 }
 
 type greedyAffinity struct {
@@ -147,7 +149,8 @@ func (m greedyMatcher) Match(suppliers []Supplier, buyers []Buyer, affinities Af
 			supplier.CapRest -= amount
 			buyer.DemandRest -= amount
 			demandRest -= amount
-			if demandRest <= 0 && len(matches[buyer.ID]) >= m.enough {
+			if demandRest <= 0 && len(matches[buyer.ID]) >= m.enough &&
+				(m.exclusive || m.sensCompare(al[i].price, m.bottom) > 0) {
 				break
 			}
 			demandRest = maxInt64(1, demandRest)

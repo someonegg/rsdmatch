@@ -157,7 +157,7 @@ func (m *Matcher) Match(nodes NodeSet, viewss []ViewSet) (ringss []RingSet, summ
 			}
 		}
 
-		matches, _ := rsdmatch.GreedyMatcher(buyers.Option.ScoreSensitivity,
+		matches, _ := rsdmatch.GreedyMatcher(buyers.Option.ScoreSensitivity, buyers.Option.ScoreSensitivity,
 			buyers.Option.EnoughNodeCount, buyers.Option.ExclusiveMode, m.Verbose).Match(
 			suppliers.Elems, buyers.Elems, newAffinityTable(buyers.Option, m.Unifier, m.Scorer))
 		if m.Verbose {
