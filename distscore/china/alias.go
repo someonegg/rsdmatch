@@ -16,7 +16,6 @@ var (
 	provinceAlias map[string]string
 
 	municiProxy map[string]string
-	regionProxy map[string]string
 )
 
 func init() {

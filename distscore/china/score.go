@@ -62,16 +62,6 @@ func init() {
 		}
 	}
 
-	regionProxy = make(map[string]string)
-	for _, provinces := range regions {
-		if len(provinces) <= 1 {
-			continue
-		}
-		for i := 1; i < len(provinces); i++ {
-			regionProxy[provinces[i]] = provinces[0]
-		}
-	}
-
 	regionsT := map[int][]string{
 		dongBei:  {"辽宁", "吉林", "黑龙江"},
 		huaBei:   {"河北", "北京", "天津", "山西", "内蒙古"},
